@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { googleCalendarApi } from "@/utils/googleCalendarApi";
@@ -25,6 +24,7 @@ const getSavedConnectionStatus = (): boolean => {
 };
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
+  
   const [calendarConnected, setCalendarConnected] = useState(getSavedConnectionStatus());
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConfigured, setIsConfigured] = useState(googleCalendarApi.isConfigured());
@@ -160,6 +160,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Changed to a named function declaration instead of an arrow function for better Fast Refresh compatibility
 export function useCalendar() {
   const context = useContext(CalendarContext);
   if (context === undefined) {
