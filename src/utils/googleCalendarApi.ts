@@ -4,9 +4,18 @@ import { toast } from "@/hooks/use-toast";
 // Google Calendar API scopes needed for our application
 const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 
-// The client ID should be replaced with a real one from the Google Cloud Console
-// In a production app, you might want to store this more securely
-const CLIENT_ID = '123456789012-example.apps.googleusercontent.com'; // Replace this with your actual client ID
+// Get the client ID from environment or use a placeholder for development
+// In a production app, this should be set properly in your hosting environment
+let CLIENT_ID = '';
+
+// Try to load CLIENT_ID from window.__ENV__ if available (useful for production deployments)
+try {
+  if (window.__ENV__ && window.__ENV__.GOOGLE_CLIENT_ID) {
+    CLIENT_ID = window.__ENV__.GOOGLE_CLIENT_ID;
+  }
+} catch (e) {
+  console.error('Could not load environment variables', e);
+}
 
 // Display meaningful error message for common OAuth errors
 const getOAuthErrorMessage = (error: any): string => {
@@ -57,6 +66,19 @@ class GoogleCalendarApi {
   // Initialize the Google API client
   loadGoogleApi(): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Check if client ID is configured
+      if (!CLIENT_ID) {
+        const errorMsg = "Google client ID is not configured. Please set up your OAuth credentials.";
+        console.error(errorMsg);
+        toast({
+          title: "Configuration Error",
+          description: errorMsg,
+          variant: "destructive"
+        });
+        reject(new Error(errorMsg));
+        return;
+      }
+      
       // If already loaded, resolve immediately
       if (this.gapiLoaded && window.gapi) {
         resolve();
@@ -144,9 +166,33 @@ class GoogleCalendarApi {
     });
   }
 
+  // Check if client ID is set
+  isConfigured(): boolean {
+    return !!CLIENT_ID && CLIENT_ID.length > 0;
+  }
+
+  // Update client ID (useful for runtime configuration)
+  setClientId(clientId: string): void {
+    CLIENT_ID = clientId;
+    // Clear existing auth state when changing client ID
+    this.token = null;
+    localStorage.removeItem('googleCalendarToken');
+    this.gapiLoaded = false;
+  }
+
   // Handle the Google Sign In process
   async signIn(): Promise<boolean> {
     try {
+      // Check if configured
+      if (!this.isConfigured()) {
+        toast({
+          title: "Configuration Error",
+          description: "Google client ID is not configured. Please set up your OAuth credentials.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
       console.log("Attempting to load Google API");
       await this.loadGoogleApi();
       
