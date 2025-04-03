@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { BotIcon, CalendarIcon, SendIcon } from 'lucide-react';
+import { BotIcon, CalendarIcon, SendIcon as LucideSendIcon } from 'lucide-react';
 import { Modal } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 
@@ -179,7 +179,7 @@ const HeroSection = () => {
                         onClick={handleSendMessage}
                         aria-label="Send message"
                       >
-                        <SendIcon className="h-4 w-4 text-white" />
+                        <CustomSendIcon className="h-4 w-4 text-white" />
                       </button>
                     </div>
                   </div>
@@ -272,7 +272,7 @@ const BrainIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const SendIcon = ({ className }: { className?: string }) => (
+const CustomSendIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="m22 2-7 20-4-9-9-4Z" />
     <path d="M22 2 11 13" />
