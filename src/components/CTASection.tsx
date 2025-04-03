@@ -1,19 +1,21 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { BotIcon, CalendarCheck } from 'lucide-react';
+import { Modal } from "@/components/ui/modal";
 
 const CTASection = () => {
+  const [showBotModal, setShowBotModal] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+
   const handleSetupBot = () => {
     console.log("Setup Telegram Bot button clicked");
-    // This would typically redirect to Telegram bot
-    alert("Redirecting to Telegram Bot setup...");
+    setShowBotModal(true);
   };
 
   const handleConnectCalendar = () => {
     console.log("Connect Google Calendar button clicked");
-    // This would typically redirect to Google OAuth flow
-    alert("Connecting to Google Calendar...");
+    setShowCalendarModal(true);
   };
 
   return (
@@ -46,6 +48,45 @@ const CTASection = () => {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <Modal
+        isOpen={showBotModal}
+        onClose={() => setShowBotModal(false)}
+        title="Setup Telegram Bot"
+      >
+        <p>To set up your Focus Friend bot on Telegram:</p>
+        <ol className="list-decimal pl-5 mt-2 space-y-2 mb-4">
+          <li>Open Telegram app on your device</li>
+          <li>Search for @FocusFriendBot in the search bar</li>
+          <li>Start a conversation with the bot by clicking "Start"</li>
+          <li>Follow the setup instructions provided by the bot</li>
+        </ol>
+      </Modal>
+
+      <Modal
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        title="Connect Google Calendar"
+      >
+        <p>To connect your Google Calendar:</p>
+        <ol className="list-decimal pl-5 mt-2 space-y-2 mb-4">
+          <li>We'll need access to your Google Calendar</li>
+          <li>Your events will sync with Focus Friend</li>
+          <li>You'll receive timely reminders and schedule assistance</li>
+          <li>Your data is kept private and secure</li>
+        </ol>
+        <Button 
+          className="w-full mt-4 bg-focus hover:bg-focus-dark"
+          onClick={() => {
+            console.log("Calendar connection initiated");
+            // This would integrate with Google OAuth
+          }}
+        >
+          <CalendarCheck className="mr-2 h-4 w-4" />
+          Connect Calendar
+        </Button>
+      </Modal>
     </section>
   );
 };
