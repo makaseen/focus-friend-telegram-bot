@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { BotMessage, UserMessage } from './ChatBubble';
-import { BrainIcon } from './ChatIcons';
+import { BrainIcon, SendIcon } from './ChatIcons';
 
 type Message = {
   text: string;
