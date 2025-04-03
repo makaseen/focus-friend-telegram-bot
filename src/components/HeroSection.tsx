@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { BotIcon, CalendarIcon } from 'lucide-react';
+import { BotIcon, CalendarIcon, SendIcon } from 'lucide-react';
 import { Modal } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 
@@ -13,6 +14,7 @@ const HeroSection = () => {
   const [showBotModal, setShowBotModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [calendarConnected, setCalendarConnected] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { text: "Hi there! I'm your Focus Friend bot. How can I help you today?", isBot: true },
   ]);
@@ -37,6 +39,7 @@ const HeroSection = () => {
     setTimeout(() => {
       setIsConnecting(false);
       setShowCalendarModal(false);
+      setCalendarConnected(true);
       toast({
         title: "Calendar Connected",
         description: "Your Google Calendar has been successfully connected.",
@@ -56,17 +59,35 @@ const HeroSection = () => {
     setTimeout(() => {
       let botResponse = { text: "", isBot: true };
       
-      // Simple pattern matching for demo purposes
+      // Enhanced pattern matching for demo purposes
       const lowerInput = userInput.toLowerCase();
-      if (lowerInput.includes("overwhelm") || lowerInput.includes("stress")) {
+      
+      // Calendar-specific responses
+      if (lowerInput.includes("calendar") || lowerInput.includes("schedule") || lowerInput.includes("check my google calendar")) {
+        if (calendarConnected) {
+          botResponse.text = "I checked your Google Calendar. Here's what you have coming up:\n\n• Team meeting at 2:00 PM today\n• Project deadline tomorrow at 3:00 PM\n• Doctor's appointment on Friday at 10:00 AM\n\nWould you like me to help you prioritize these events?";
+        } else {
+          botResponse.text = "It looks like your Google Calendar isn't connected yet. Would you like to connect it now so I can help you manage your schedule?";
+        }
+      }
+      // Handle stress/overwhelm
+      else if (lowerInput.includes("overwhelm") || lowerInput.includes("stress")) {
         botResponse.text = "Let's look at your schedule and break things down. I see you have 3 main tasks today. Let's prioritize them:\n\n1. Meeting at 2pm (high priority)\n2. Project deadline at 5pm (high priority)\n3. Email responses (medium priority)";
-      } else if (lowerInput.includes("worry") || lowerInput.includes("anxious") || lowerInput.includes("project")) {
+      } 
+      // Handle anxiety/worry
+      else if (lowerInput.includes("worry") || lowerInput.includes("anxious") || lowerInput.includes("project")) {
         botResponse.text = "Let's create a step-by-step plan. Would you like to use the Pomodoro technique to tackle it?";
-      } else if (lowerInput.includes("hello") || lowerInput.includes("hi")) {
+      } 
+      // Handle greetings
+      else if (lowerInput.includes("hello") || lowerInput.includes("hi")) {
         botResponse.text = "Hello! How can I assist you with your focus and productivity today?";
-      } else if (lowerInput.includes("help") || lowerInput.includes("can you")) {
+      } 
+      // Handle help requests
+      else if (lowerInput.includes("help") || lowerInput.includes("can you")) {
         botResponse.text = "I can help you manage your schedule, break down tasks, provide motivation, and suggest focus techniques. What specific challenge are you facing today?";
-      } else {
+      } 
+      // Default response
+      else {
         botResponse.text = "I understand. Let me help you organize your thoughts and create an action plan. Would you like to start by breaking down your tasks or setting up some focus time?";
       }
       
@@ -114,9 +135,10 @@ const HeroSection = () => {
                 variant="outline" 
                 size="lg"
                 onClick={handleConnectCalendar}
+                disabled={calendarConnected}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                Connect Google Calendar
+                {calendarConnected ? "Calendar Connected" : "Connect Google Calendar"}
               </Button>
             </div>
           </div>
@@ -155,6 +177,7 @@ const HeroSection = () => {
                       <button 
                         className="ml-2 rounded-full bg-focus p-1.5"
                         onClick={handleSendMessage}
+                        aria-label="Send message"
                       >
                         <SendIcon className="h-4 w-4 text-white" />
                       </button>
@@ -196,13 +219,15 @@ const HeroSection = () => {
         <Button 
           className="w-full mt-4 bg-focus hover:bg-focus-dark"
           onClick={initiateCalendarConnection}
-          disabled={isConnecting}
+          disabled={isConnecting || calendarConnected}
         >
           {isConnecting ? (
             <>
               <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
               Connecting...
             </>
+          ) : calendarConnected ? (
+            "Already Connected"
           ) : (
             <>
               <CalendarIcon className="mr-2 h-4 w-4" />

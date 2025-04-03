@@ -9,6 +9,7 @@ const Header = () => {
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showBotModal, setShowBotModal] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [calendarConnected, setCalendarConnected] = useState(false);
 
   const handleConnectCalendar = () => {
     console.log("Connect Calendar button clicked");
@@ -28,6 +29,7 @@ const Header = () => {
     setTimeout(() => {
       setIsConnecting(false);
       setShowCalendarModal(false);
+      setCalendarConnected(true);
       toast({
         title: "Calendar Connected",
         description: "Your Google Calendar has been successfully connected.",
@@ -49,9 +51,10 @@ const Header = () => {
             size="sm" 
             className="hidden sm:inline-flex"
             onClick={handleConnectCalendar}
+            disabled={calendarConnected}
           >
             <Calendar className="h-4 w-4 mr-2" />
-            Connect Calendar
+            {calendarConnected ? "Calendar Connected" : "Connect Calendar"}
           </Button>
           <Button 
             size="sm"
@@ -79,13 +82,15 @@ const Header = () => {
         <Button 
           className="w-full mt-4 bg-focus hover:bg-focus-dark"
           onClick={initiateCalendarConnection}
-          disabled={isConnecting}
+          disabled={isConnecting || calendarConnected}
         >
           {isConnecting ? (
             <>
               <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
               Connecting...
             </>
+          ) : calendarConnected ? (
+            "Already Connected"
           ) : (
             <>
               <Calendar className="mr-2 h-4 w-4" />

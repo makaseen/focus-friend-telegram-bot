@@ -9,6 +9,7 @@ const CTASection = () => {
   const [showBotModal, setShowBotModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [calendarConnected, setCalendarConnected] = useState(false);
 
   const handleSetupBot = () => {
     console.log("Setup Telegram Bot button clicked");
@@ -28,6 +29,7 @@ const CTASection = () => {
     setTimeout(() => {
       setIsConnecting(false);
       setShowCalendarModal(false);
+      setCalendarConnected(true);
       toast({
         title: "Calendar Connected",
         description: "Your Google Calendar has been successfully connected.",
@@ -58,9 +60,10 @@ const CTASection = () => {
               variant="outline" 
               className="text-white border-white hover:bg-white/10"
               onClick={handleConnectCalendar}
+              disabled={calendarConnected}
             >
               <CalendarCheck className="mr-2 h-5 w-5" />
-              Connect Google Calendar
+              {calendarConnected ? "Calendar Connected" : "Connect Google Calendar"}
             </Button>
           </div>
         </div>
@@ -96,13 +99,15 @@ const CTASection = () => {
         <Button 
           className="w-full mt-4 bg-focus hover:bg-focus-dark"
           onClick={initiateCalendarConnection}
-          disabled={isConnecting}
+          disabled={isConnecting || calendarConnected}
         >
           {isConnecting ? (
             <>
               <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
               Connecting...
             </>
+          ) : calendarConnected ? (
+            "Already Connected"
           ) : (
             <>
               <CalendarCheck className="mr-2 h-4 w-4" />
