@@ -3,13 +3,12 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { BrainCog, Calendar, Bot } from 'lucide-react';
 import { Modal } from "@/components/ui/modal";
-import { toast } from "@/hooks/use-toast";
+import { useCalendar } from "@/contexts/CalendarContext";
 
 const Header = () => {
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showBotModal, setShowBotModal] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [calendarConnected, setCalendarConnected] = useState(false);
+  const { calendarConnected, isConnecting, connectCalendar } = useCalendar();
 
   const handleConnectCalendar = () => {
     console.log("Connect Calendar button clicked");
@@ -22,19 +21,7 @@ const Header = () => {
   };
 
   const initiateCalendarConnection = () => {
-    console.log("Calendar connection initiated");
-    setIsConnecting(true);
-    
-    // Simulate API call with timeout
-    setTimeout(() => {
-      setIsConnecting(false);
-      setShowCalendarModal(false);
-      setCalendarConnected(true);
-      toast({
-        title: "Calendar Connected",
-        description: "Your Google Calendar has been successfully connected.",
-      });
-    }, 2000);
+    connectCalendar();
   };
 
   return (

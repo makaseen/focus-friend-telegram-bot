@@ -1,9 +1,8 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { BotIcon, CalendarIcon, SendIcon as LucideSendIcon } from 'lucide-react';
 import { Modal } from "@/components/ui/modal";
-import { toast } from "@/hooks/use-toast";
+import { useCalendar } from "@/contexts/CalendarContext";
 
 type Message = {
   text: string;
@@ -13,8 +12,7 @@ type Message = {
 const HeroSection = () => {
   const [showBotModal, setShowBotModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [calendarConnected, setCalendarConnected] = useState(false);
+  const { calendarConnected, isConnecting, connectCalendar } = useCalendar();
   const [messages, setMessages] = useState<Message[]>([
     { text: "Hi there! I'm your Focus Friend bot. How can I help you today?", isBot: true },
   ]);
@@ -32,19 +30,7 @@ const HeroSection = () => {
   };
 
   const initiateCalendarConnection = () => {
-    console.log("Calendar connection initiated");
-    setIsConnecting(true);
-    
-    // Simulate API call with timeout
-    setTimeout(() => {
-      setIsConnecting(false);
-      setShowCalendarModal(false);
-      setCalendarConnected(true);
-      toast({
-        title: "Calendar Connected",
-        description: "Your Google Calendar has been successfully connected.",
-      });
-    }, 2000);
+    connectCalendar();
   };
 
   const handleSendMessage = () => {
