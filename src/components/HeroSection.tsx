@@ -1,23 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { BotIcon, CalendarIcon, LucideSendIcon } from 'lucide-react';
+
+import React, { useState } from 'react';
 import { Modal } from "@/components/ui/modal";
 import { useCalendar } from "@/contexts/CalendarContext";
-
-type Message = {
-  text: string;
-  isBot: boolean;
-};
+import { CalendarIcon } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import ChatInterface from "@/components/chat/ChatInterface";
+import HeroActions from "@/components/hero/HeroActions";
+import CalendarEvents from "@/components/calendar/CalendarEvents";
 
 const HeroSection = () => {
   const [showBotModal, setShowBotModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const { calendarConnected, isConnecting, connectCalendar, disconnectCalendar, events, refreshEvents } = useCalendar();
-  const [messages, setMessages] = useState<Message[]>([
-    { text: "Hi there! I'm your Focus Friend bot. How can I help you today?", isBot: true },
-  ]);
-  const [userInput, setUserInput] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleGetStarted = () => {
     console.log("Get Started button clicked");
@@ -31,76 +25,6 @@ const HeroSection = () => {
 
   const initiateCalendarConnection = () => {
     connectCalendar();
-  };
-
-  const handleSendMessage = () => {
-    if (userInput.trim() === "") return;
-    
-    // Add user message
-    const newUserMessage = { text: userInput, isBot: false };
-    setMessages(prev => [...prev, newUserMessage]);
-    setUserInput("");
-    
-    // Simulate bot thinking
-    setTimeout(() => {
-      let botResponse = { text: "", isBot: true };
-      
-      // Enhanced pattern matching for demo purposes
-      const lowerInput = userInput.toLowerCase();
-      
-      // Calendar-specific responses
-      if (lowerInput.includes("calendar") || lowerInput.includes("schedule") || lowerInput.includes("check my google calendar")) {
-        if (calendarConnected) {
-          // Format real events if available
-          if (events.length > 0) {
-            const formattedEvents = events.slice(0, 3).map(event => {
-              const start = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
-              return `• ${event.summary} on ${start.toLocaleDateString()} at ${event.start.dateTime ? start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'All day'}`;
-            }).join('\n');
-            
-            botResponse.text = `I checked your Google Calendar. Here's what you have coming up:\n\n${formattedEvents}\n\nWould you like me to help you prioritize these events?`;
-          } else {
-            botResponse.text = "I checked your Google Calendar but didn't find any upcoming events. Would you like me to help you schedule something?";
-          }
-        } else {
-          botResponse.text = "It looks like your Google Calendar isn't connected yet. Would you like to connect it now so I can help you manage your schedule?";
-        }
-      }
-      // Handle stress/overwhelm
-      else if (lowerInput.includes("overwhelm") || lowerInput.includes("stress")) {
-        botResponse.text = "Let's look at your schedule and break things down. I see you have 3 main tasks today. Let's prioritize them:\n\n1. Meeting at 2pm (high priority)\n2. Project deadline at 5pm (high priority)\n3. Email responses (medium priority)";
-      } 
-      // Handle anxiety/worry
-      else if (lowerInput.includes("worry") || lowerInput.includes("anxious") || lowerInput.includes("project")) {
-        botResponse.text = "Let's create a step-by-step plan. Would you like to use the Pomodoro technique to tackle it?";
-      } 
-      // Handle greetings
-      else if (lowerInput.includes("hello") || lowerInput.includes("hi")) {
-        botResponse.text = "Hello! How can I assist you with your focus and productivity today?";
-      } 
-      // Handle help requests
-      else if (lowerInput.includes("help") || lowerInput.includes("can you")) {
-        botResponse.text = "I can help you manage your schedule, break down tasks, provide motivation, and suggest focus techniques. What specific challenge are you facing today?";
-      } 
-      // Default response
-      else {
-        botResponse.text = "I understand. Let me help you organize your thoughts and create an action plan. Would you like to start by breaking down your tasks or setting up some focus time?";
-      }
-      
-      setMessages(prev => [...prev, botResponse]);
-    }, 1000);
-  };
-
-  // Auto-scroll to the bottom when new messages appear
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Handle Enter key press
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSendMessage();
-    }
   };
 
   return (
@@ -118,113 +42,25 @@ const HeroSection = () => {
               A personal bot that helps you manage ADHD, stay on track with your schedule, 
               and provides timely recommendations tailored just for you.
             </p>
-            <div className="flex flex-col gap-2 min-[400px]:flex-row">
-              <Button 
-                className="bg-focus hover:bg-focus-dark" 
-                size="lg"
-                onClick={handleGetStarted}
-              >
-                <BotIcon className="mr-2 h-4 w-4" />
-                Get Started
-              </Button>
-              {calendarConnected ? (
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  onClick={disconnectCalendar}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  Disconnect Calendar
-                </Button>
-              ) : (
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  onClick={handleConnectCalendar}
-                  disabled={isConnecting}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {isConnecting ? "Connecting..." : "Connect Google Calendar"}
-                </Button>
-              )}
-            </div>
+            
+            <HeroActions 
+              onGetStarted={handleGetStarted}
+              onConnectCalendar={handleConnectCalendar}
+              onDisconnectCalendar={disconnectCalendar}
+              calendarConnected={calendarConnected}
+              isConnecting={isConnecting}
+            />
             
             {calendarConnected && events.length > 0 && (
-              <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <h3 className="font-medium mb-2 flex items-center">
-                  <CalendarIcon className="h-4 w-4 mr-2 text-focus" />
-                  Your Upcoming Events
-                </h3>
-                <ul className="space-y-2">
-                  {events.slice(0, 3).map((event, index) => {
-                    const start = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
-                    return (
-                      <li key={index} className="text-sm">
-                        <span className="font-medium">{event.summary}</span>
-                        <br />
-                        <span className="text-muted-foreground">
-                          {start.toLocaleDateString()} {event.start.dateTime ? `at ${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : 'All day'}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <Button 
-                  variant="link" 
-                  size="sm" 
-                  className="mt-2 p-0 h-auto text-focus"
-                  onClick={() => refreshEvents()}
-                >
-                  Refresh events
-                </Button>
-              </div>
+              <CalendarEvents 
+                events={events}
+                refreshEvents={refreshEvents}
+              />
             )}
           </div>
           
           <div className="flex items-center justify-center">
-            <div className="relative h-[400px] w-[320px] rounded-xl bg-gradient-to-b from-focus to-calm p-1 shadow-xl">
-              <div className="absolute inset-0 rounded-xl bg-white p-2">
-                <div className="flex h-full flex-col rounded-lg bg-slate-50">
-                  <div className="flex items-center border-b p-3">
-                    <div className="h-8 w-8 rounded-full bg-focus flex items-center justify-center">
-                      <BrainIcon className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-medium">Focus Friend</p>
-                      <p className="text-xs text-muted-foreground">Active now</p>
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {messages.map((msg, index) => (
-                      msg.isBot ? (
-                        <BotMessage key={index} message={msg.text} />
-                      ) : (
-                        <UserMessage key={index} message={msg.text} />
-                      )
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                  <div className="border-t p-3">
-                    <div className="flex rounded-full border bg-background px-3 py-2 text-sm items-center">
-                      <input
-                        className="flex-1 bg-transparent outline-none"
-                        placeholder="Type a message..."
-                        value={userInput}
-                        onChange={(e) => setUserInput(e.target.value)}
-                        onKeyDown={handleKeyPress}
-                      />
-                      <button 
-                        className="ml-2 rounded-full bg-focus p-1.5"
-                        onClick={handleSendMessage}
-                        aria-label="Send message"
-                      >
-                        <CustomSendIcon className="h-4 w-4 text-white" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ChatInterface />
           </div>
         </div>
       </div>
@@ -278,44 +114,5 @@ const HeroSection = () => {
     </section>
   );
 };
-
-const BotMessage = ({ message }: { message: string }) => (
-  <div className="flex items-start">
-    <div className="h-8 w-8 rounded-full bg-focus flex items-center justify-center">
-      <BotIcon className="h-5 w-5 text-white" />
-    </div>
-    <div className="ml-2 max-w-[80%] rounded-tr-lg rounded-br-lg rounded-bl-lg bg-slate-100 p-3">
-      <p className="text-sm whitespace-pre-line">{message}</p>
-    </div>
-  </div>
-);
-
-const UserMessage = ({ message }: { message: string }) => (
-  <div className="flex items-start justify-end">
-    <div className="mr-2 max-w-[80%] rounded-tl-lg rounded-tr-lg rounded-bl-lg bg-focus p-3">
-      <p className="text-sm text-white">{message}</p>
-    </div>
-    <div className="h-8 w-8 rounded-full bg-slate-300"></div>
-  </div>
-);
-
-const BrainIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M12 4.5a2.5 2.5 0 0 0-4.96-.46 2.5 2.5 0 0 0-1.98 3 2.5 2.5 0 0 0-1.32 4.24 3 3 0 0 0 .34 5.58 2.5 2.5 0 0 0 2.96 3.08A2.5 2.5 0 0 0 12 19.5a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 12 4.5" />
-    <path d="m15.7 10.4-.9.4" />
-    <path d="m9.2 13.2.9-.4" />
-    <path d="m12.8 7.7-.4.9" />
-    <path d="m11.6 15.4.4-.9" />
-    <path d="M12 8v8" />
-    <path d="M8 12h8" />
-  </svg>
-);
-
-const CustomSendIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="m22 2-7 20-4-9-9-4Z" />
-    <path d="M22 2 11 13" />
-  </svg>
-);
 
 export default HeroSection;
