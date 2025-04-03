@@ -3,10 +3,12 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { BotIcon, CalendarCheck } from 'lucide-react';
 import { Modal } from "@/components/ui/modal";
+import { toast } from "@/hooks/use-toast";
 
 const CTASection = () => {
   const [showBotModal, setShowBotModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const handleSetupBot = () => {
     console.log("Setup Telegram Bot button clicked");
@@ -16,6 +18,21 @@ const CTASection = () => {
   const handleConnectCalendar = () => {
     console.log("Connect Google Calendar button clicked");
     setShowCalendarModal(true);
+  };
+
+  const initiateCalendarConnection = () => {
+    console.log("Calendar connection initiated");
+    setIsConnecting(true);
+    
+    // Simulate API call with timeout
+    setTimeout(() => {
+      setIsConnecting(false);
+      setShowCalendarModal(false);
+      toast({
+        title: "Calendar Connected",
+        description: "Your Google Calendar has been successfully connected.",
+      });
+    }, 2000);
   };
 
   return (
@@ -78,13 +95,20 @@ const CTASection = () => {
         </ol>
         <Button 
           className="w-full mt-4 bg-focus hover:bg-focus-dark"
-          onClick={() => {
-            console.log("Calendar connection initiated");
-            // This would integrate with Google OAuth
-          }}
+          onClick={initiateCalendarConnection}
+          disabled={isConnecting}
         >
-          <CalendarCheck className="mr-2 h-4 w-4" />
-          Connect Calendar
+          {isConnecting ? (
+            <>
+              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+              Connecting...
+            </>
+          ) : (
+            <>
+              <CalendarCheck className="mr-2 h-4 w-4" />
+              Connect Calendar
+            </>
+          )}
         </Button>
       </Modal>
     </section>
