@@ -8,7 +8,7 @@ import { useCalendar } from "@/contexts/CalendarContext";
 const CTASection = () => {
   const [showBotModal, setShowBotModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
-  const { calendarConnected, isConnecting, connectCalendar } = useCalendar();
+  const { calendarConnected, isConnecting, connectCalendar, disconnectCalendar } = useCalendar();
 
   const handleSetupBot = () => {
     console.log("Setup Telegram Bot button clicked");
@@ -42,16 +42,28 @@ const CTASection = () => {
               <BotIcon className="mr-2 h-5 w-5" />
               Setup Telegram Bot
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="text-white border-white hover:bg-white/10"
-              onClick={handleConnectCalendar}
-              disabled={calendarConnected}
-            >
-              <CalendarCheck className="mr-2 h-5 w-5" />
-              {calendarConnected ? "Calendar Connected" : "Connect Google Calendar"}
-            </Button>
+            {calendarConnected ? (
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-white border-white hover:bg-white/10"
+                onClick={disconnectCalendar}
+              >
+                <CalendarCheck className="mr-2 h-5 w-5" />
+                Disconnect Calendar
+              </Button>
+            ) : (
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-white border-white hover:bg-white/10"
+                onClick={handleConnectCalendar}
+                disabled={isConnecting}
+              >
+                <CalendarCheck className="mr-2 h-5 w-5" />
+                {isConnecting ? "Connecting..." : "Connect Google Calendar"}
+              </Button>
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { BotIcon, CalendarIcon, SendIcon as LucideSendIcon } from 'lucide-react';
+import { BotIcon, CalendarIcon, LucideSendIcon } from 'lucide-react';
 import { Modal } from "@/components/ui/modal";
 import { useCalendar } from "@/contexts/CalendarContext";
 
@@ -12,7 +12,7 @@ type Message = {
 const HeroSection = () => {
   const [showBotModal, setShowBotModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
-  const { calendarConnected, isConnecting, connectCalendar, disconnectCalendar } = useCalendar();
+  const { calendarConnected, isConnecting, connectCalendar, disconnectCalendar, events, refreshEvents } = useCalendar();
   const [messages, setMessages] = useState<Message[]>([
     { text: "Hi there! I'm your Focus Friend bot. How can I help you today?", isBot: true },
   ]);
@@ -51,7 +51,17 @@ const HeroSection = () => {
       // Calendar-specific responses
       if (lowerInput.includes("calendar") || lowerInput.includes("schedule") || lowerInput.includes("check my google calendar")) {
         if (calendarConnected) {
-          botResponse.text = "I checked your Google Calendar. Here's what you have coming up:\n\n• Team meeting at 2:00 PM today\n• Project deadline tomorrow at 3:00 PM\n• Doctor's appointment on Friday at 10:00 AM\n\nWould you like me to help you prioritize these events?";
+          // Format real events if available
+          if (events.length > 0) {
+            const formattedEvents = events.slice(0, 3).map(event => {
+              const start = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
+              return `• ${event.summary} on ${start.toLocaleDateString()} at ${event.start.dateTime ? start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'All day'}`;
+            }).join('\n');
+            
+            botResponse.text = `I checked your Google Calendar. Here's what you have coming up:\n\n${formattedEvents}\n\nWould you like me to help you prioritize these events?`;
+          } else {
+            botResponse.text = "I checked your Google Calendar but didn't find any upcoming events. Would you like me to help you schedule something?";
+          }
         } else {
           botResponse.text = "It looks like your Google Calendar isn't connected yet. Would you like to connect it now so I can help you manage your schedule?";
         }
@@ -138,7 +148,39 @@ const HeroSection = () => {
                 </Button>
               )}
             </div>
+            
+            {calendarConnected && events.length > 0 && (
+              <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <h3 className="font-medium mb-2 flex items-center">
+                  <CalendarIcon className="h-4 w-4 mr-2 text-focus" />
+                  Your Upcoming Events
+                </h3>
+                <ul className="space-y-2">
+                  {events.slice(0, 3).map((event, index) => {
+                    const start = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
+                    return (
+                      <li key={index} className="text-sm">
+                        <span className="font-medium">{event.summary}</span>
+                        <br />
+                        <span className="text-muted-foreground">
+                          {start.toLocaleDateString()} {event.start.dateTime ? `at ${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : 'All day'}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="mt-2 p-0 h-auto text-focus"
+                  onClick={() => refreshEvents()}
+                >
+                  Refresh events
+                </Button>
+              </div>
+            )}
           </div>
+          
           <div className="flex items-center justify-center">
             <div className="relative h-[400px] w-[320px] rounded-xl bg-gradient-to-b from-focus to-calm p-1 shadow-xl">
               <div className="absolute inset-0 rounded-xl bg-white p-2">

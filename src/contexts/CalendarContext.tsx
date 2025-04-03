@@ -1,60 +1,114 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
+import { googleCalendarApi } from "@/utils/googleCalendarApi";
 
 interface CalendarContextType {
   calendarConnected: boolean;
   isConnecting: boolean;
   connectCalendar: () => void;
   disconnectCalendar: () => void;
+  events: any[];
+  refreshEvents: () => Promise<void>;
 }
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
 
 // Check for saved connection status in localStorage
 const getSavedConnectionStatus = (): boolean => {
-  const saved = localStorage.getItem('calendarConnected');
-  return saved === 'true';
+  // Now we check if there's actually a valid token
+  return googleCalendarApi.isAuthenticated();
 };
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const [calendarConnected, setCalendarConnected] = useState(getSavedConnectionStatus());
   const [isConnecting, setIsConnecting] = useState(false);
+  const [events, setEvents] = useState<any[]>([]);
 
-  // Save connection status to localStorage whenever it changes
+  // Initialize and check authentication state
   useEffect(() => {
-    localStorage.setItem('calendarConnected', calendarConnected.toString());
-    console.log(`Calendar connection status saved: ${calendarConnected}`);
-  }, [calendarConnected]);
+    const checkAuthStatus = async () => {
+      const isAuth = googleCalendarApi.isAuthenticated();
+      setCalendarConnected(isAuth);
+      
+      if (isAuth) {
+        refreshEvents();
+      }
+    };
+    
+    checkAuthStatus();
+    
+    console.log(`Calendar connection status: ${calendarConnected}`);
+  }, []);
 
-  const connectCalendar = () => {
+  const connectCalendar = async () => {
     if (calendarConnected || isConnecting) return;
     
     console.log("Calendar connection initiated");
     setIsConnecting(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
+    try {
+      const success = await googleCalendarApi.signIn();
+      
       setIsConnecting(false);
-      setCalendarConnected(true);
+      setCalendarConnected(success);
+      
+      if (success) {
+        toast({
+          title: "Calendar Connected",
+          description: "Your Google Calendar has been successfully connected.",
+        });
+        
+        // Fetch events after successful connection
+        await refreshEvents();
+      }
+    } catch (error) {
+      setIsConnecting(false);
+      console.error("Calendar connection failed:", error);
+      
       toast({
-        title: "Calendar Connected",
-        description: "Your Google Calendar has been successfully connected.",
+        title: "Connection Failed",
+        description: "Could not connect to Google Calendar.",
+        variant: "destructive",
       });
-    }, 2000);
+    }
   };
 
-  const disconnectCalendar = () => {
+  const disconnectCalendar = async () => {
     if (!calendarConnected) return;
     
     console.log("Calendar disconnection initiated");
     
-    // Immediate disconnection
-    setCalendarConnected(false);
-    toast({
-      title: "Calendar Disconnected",
-      description: "Your Google Calendar has been disconnected.",
-    });
+    try {
+      await googleCalendarApi.signOut();
+      
+      setCalendarConnected(false);
+      setEvents([]);
+      
+      toast({
+        title: "Calendar Disconnected",
+        description: "Your Google Calendar has been disconnected.",
+      });
+    } catch (error) {
+      console.error("Calendar disconnection failed:", error);
+      
+      toast({
+        title: "Disconnection Failed",
+        description: "Could not disconnect from Google Calendar.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const refreshEvents = async () => {
+    if (!calendarConnected) return;
+    
+    try {
+      const upcomingEvents = await googleCalendarApi.getUpcomingEvents();
+      setEvents(upcomingEvents);
+    } catch (error) {
+      console.error("Failed to refresh calendar events:", error);
+    }
   };
 
   return (
@@ -62,7 +116,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       calendarConnected, 
       isConnecting, 
       connectCalendar,
-      disconnectCalendar 
+      disconnectCalendar,
+      events,
+      refreshEvents
     }}>
       {children}
     </CalendarContext.Provider>
