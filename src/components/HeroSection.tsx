@@ -12,7 +12,7 @@ type Message = {
 const HeroSection = () => {
   const [showBotModal, setShowBotModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
-  const { calendarConnected, isConnecting, connectCalendar } = useCalendar();
+  const { calendarConnected, isConnecting, connectCalendar, disconnectCalendar } = useCalendar();
   const [messages, setMessages] = useState<Message[]>([
     { text: "Hi there! I'm your Focus Friend bot. How can I help you today?", isBot: true },
   ]);
@@ -117,15 +117,26 @@ const HeroSection = () => {
                 <BotIcon className="mr-2 h-4 w-4" />
                 Get Started
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={handleConnectCalendar}
-                disabled={calendarConnected}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {calendarConnected ? "Calendar Connected" : "Connect Google Calendar"}
-              </Button>
+              {calendarConnected ? (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={disconnectCalendar}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  Disconnect Calendar
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={handleConnectCalendar}
+                  disabled={isConnecting}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {isConnecting ? "Connecting..." : "Connect Google Calendar"}
+                </Button>
+              )}
             </div>
           </div>
           <div className="flex items-center justify-center">

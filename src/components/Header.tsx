@@ -8,7 +8,7 @@ import { useCalendar } from "@/contexts/CalendarContext";
 const Header = () => {
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showBotModal, setShowBotModal] = useState(false);
-  const { calendarConnected, isConnecting, connectCalendar } = useCalendar();
+  const { calendarConnected, isConnecting, connectCalendar, disconnectCalendar } = useCalendar();
 
   const handleConnectCalendar = () => {
     console.log("Connect Calendar button clicked");
@@ -33,16 +33,28 @@ const Header = () => {
         </div>
         
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="hidden sm:inline-flex"
-            onClick={handleConnectCalendar}
-            disabled={calendarConnected}
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            {calendarConnected ? "Calendar Connected" : "Connect Calendar"}
-          </Button>
+          {calendarConnected ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="hidden sm:inline-flex"
+              onClick={disconnectCalendar}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Disconnect Calendar
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="hidden sm:inline-flex"
+              onClick={handleConnectCalendar}
+              disabled={isConnecting}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              {isConnecting ? "Connecting..." : "Connect Calendar"}
+            </Button>
+          )}
           <Button 
             size="sm"
             onClick={handleSetupBot}
