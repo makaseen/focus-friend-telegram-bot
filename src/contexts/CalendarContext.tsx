@@ -16,7 +16,7 @@ const CalendarContext = createContext<CalendarContextType | undefined>(undefined
 
 // Check for saved connection status in localStorage
 const getSavedConnectionStatus = (): boolean => {
-  // Now we check if there's actually a valid token
+  // Check if there's actually a valid token
   return googleCalendarApi.isAuthenticated();
 };
 
@@ -50,10 +50,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     try {
       const success = await googleCalendarApi.signIn();
       
-      setIsConnecting(false);
-      setCalendarConnected(success);
-      
       if (success) {
+        setCalendarConnected(true);
         toast({
           title: "Calendar Connected",
           description: "Your Google Calendar has been successfully connected.",
@@ -62,6 +60,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         // Fetch events after successful connection
         await refreshEvents();
       }
+      
+      setIsConnecting(false);
     } catch (error) {
       setIsConnecting(false);
       console.error("Calendar connection failed:", error);
