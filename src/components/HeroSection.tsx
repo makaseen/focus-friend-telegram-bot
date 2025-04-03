@@ -1,9 +1,20 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { BotIcon, CalendarIcon } from 'lucide-react';
 
 const HeroSection = () => {
+  const handleGetStarted = () => {
+    console.log("Get Started button clicked");
+    // This would typically redirect to Telegram bot setup
+    alert("Redirecting to Telegram Bot setup...");
+  };
+
+  const handleConnectCalendar = () => {
+    console.log("Connect Google Calendar button clicked");
+    // This would typically redirect to Google OAuth flow
+    alert("Connecting to Google Calendar...");
+  };
+
   return (
     <section className="py-12 md:py-24 lg:py-32 overflow-hidden">
       <div className="container px-4 md:px-6">
@@ -20,11 +31,19 @@ const HeroSection = () => {
               and provides timely recommendations tailored just for you.
             </p>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
-              <Button className="bg-focus hover:bg-focus-dark" size="lg">
+              <Button 
+                className="bg-focus hover:bg-focus-dark" 
+                size="lg"
+                onClick={handleGetStarted}
+              >
                 <BotIcon className="mr-2 h-4 w-4" />
                 Get Started
               </Button>
-              <Button variant="outline" size="lg">
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={handleConnectCalendar}
+              >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 Connect Google Calendar
               </Button>
