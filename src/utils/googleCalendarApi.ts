@@ -4,9 +4,24 @@ import { toast } from "@/hooks/use-toast";
 // Google Calendar API scopes needed for our application
 const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 
-// This would be your Google OAuth client ID from the Google Cloud Console
-// In a real app, you might want to store this more securely
-const CLIENT_ID = '123456789012-example.apps.googleusercontent.com';
+// The client ID should be replaced with a real one from the Google Cloud Console
+// In a production app, you might want to store this more securely
+const CLIENT_ID = '123456789012-example.apps.googleusercontent.com'; // Replace this with your actual client ID
+
+// Display meaningful error message for common OAuth errors
+const getOAuthErrorMessage = (error: any): string => {
+  console.error('OAuth error details:', error);
+  
+  if (error?.error === 'invalid_client') {
+    return "Invalid OAuth client ID. Please make sure you've configured a valid Google Cloud project with OAuth credentials.";
+  }
+  
+  if (error?.error === 'access_denied') {
+    return "You denied access to your Google Calendar.";
+  }
+  
+  return "An error occurred during Google authentication. Please try again.";
+};
 
 export interface TokenResponse {
   access_token: string;
@@ -70,6 +85,12 @@ class GoogleCalendarApi {
               resolve();
             }).catch((error: any) => {
               console.error("Error initializing Google API client:", error);
+              const errorMessage = getOAuthErrorMessage(error);
+              toast({
+                title: "Google API Initialization Failed",
+                description: errorMessage,
+                variant: "destructive"
+              });
               reject(error);
             });
           });
@@ -98,6 +119,12 @@ class GoogleCalendarApi {
                   resolve();
                 }).catch((error: any) => {
                   console.error("Error initializing Google API client:", error);
+                  const errorMessage = getOAuthErrorMessage(error);
+                  toast({
+                    title: "Google API Initialization Failed",
+                    description: errorMessage,
+                    variant: "destructive"
+                  });
                   reject(error);
                 });
               });
@@ -145,9 +172,10 @@ class GoogleCalendarApi {
       return true;
     } catch (error) {
       console.error('Google Calendar sign in failed:', error);
+      const errorMessage = getOAuthErrorMessage(error);
       toast({
         title: "Authentication Failed",
-        description: "Could not connect to Google Calendar",
+        description: errorMessage,
         variant: "destructive"
       });
       return false;
