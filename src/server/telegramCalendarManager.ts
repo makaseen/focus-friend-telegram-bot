@@ -1,3 +1,4 @@
+
 import { Context } from 'telegraf';
 import { googleCalendarApi } from '../utils/googleCalendar/index.js';
 import { CalendarEvent, TokenResponse } from '../utils/googleCalendar/types.js';
@@ -24,7 +25,8 @@ export class TelegramCalendarManager {
   // Get the authorization URL for a user
   getAuthUrl(userId: number): string {
     const state = this.generateOAuthState(userId);
-    return `${process.env.API_BASE_URL}/auth/google?state=${state}`;
+    // Use /auth/google for consistency with the frontend routes
+    return `${process.env.API_BASE_URL || 'https://focus-friend-telegram-bot.lovable.app'}/auth/google?state=${state}`;
   }
   
   // Process OAuth callback and store the token
