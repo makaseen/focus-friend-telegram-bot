@@ -40,30 +40,34 @@ export class TelegramCalendarManager {
   getAuthUrl(userId: number): string {
     const state = this.generateOAuthState(userId);
     
-    // Use config.apiBaseUrl instead of directly accessing process.env
-    // For local development, we use the bot server's URL
+    // Use config.apiBaseUrl or determine the correct base URL
     let baseUrl;
     
-    // In development, always use the local bot server URL (port 3001)
+    // In development, always use the bot server's URL (port 3001)
     if (process.env.NODE_ENV !== 'production') {
       baseUrl = 'http://localhost:3001';
+      console.log(`Using development bot server URL: ${baseUrl}`);
     } else {
       // Use the configured apiBaseUrl for production
       baseUrl = config.apiBaseUrl;
+      console.log(`Using production API base URL: ${baseUrl}`);
       
       // If apiBaseUrl is not set or invalid, use a default
       if (!baseUrl || !baseUrl.startsWith('http')) {
         baseUrl = 'https://focus-friend-telegram-bot.lovable.app';
+        console.log(`API base URL not set or invalid, using default: ${baseUrl}`);
       }
     }
     
     // Ensure we have a properly formatted URL
-    if (!baseUrl.endsWith('/')) {
-      baseUrl = baseUrl + '/';
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
     }
     
     // Use the auth endpoint on the bot server that will redirect to the frontend
-    return `${baseUrl}auth/google?state=${state}`;
+    const authUrl = `${baseUrl}/auth/google?state=${state}`;
+    console.log(`Generated auth URL: ${authUrl}`);
+    return authUrl;
   }
   
   // Process OAuth callback and store the token
@@ -71,10 +75,12 @@ export class TelegramCalendarManager {
     const userId = this.pendingAuths[state];
     
     if (!userId) {
+      console.log(`No pending auth found for state: ${state}`);
       return false;
     }
     
     this.storeUserToken(userId, token);
+    console.log(`Auth callback processed for user: ${userId}`);
     
     // Clean up the pending auth
     delete this.pendingAuths[state];
