@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { googleCalendarApi } from '@/utils/googleCalendar';
@@ -12,7 +11,7 @@ const AuthCallback: React.FC = () => {
   const [message, setMessage] = useState('Processing authentication response...');
   const location = useLocation();
   const navigate = useNavigate();
-  const params = useParams();
+  const routeParams = useParams<{ state?: string }>();
   
   useEffect(() => {
     const processAuth = async () => {
@@ -32,8 +31,8 @@ const AuthCallback: React.FC = () => {
           let state = '';
           
           // Check if it's in the URL parameters (from router params)
-          if (params.state) {
-            state = params.state;
+          if (routeParams.state) {
+            state = routeParams.state;
           } else {
             // If not in URL params, try to get it from query string
             state = location.search.substring(1); // Remove the ? from the search params
@@ -69,10 +68,10 @@ const AuthCallback: React.FC = () => {
         }
         
         // Handle callback - This is the OAuth callback from Google
-        const params = new URLSearchParams(location.search);
-        const code = params.get('code');
-        const error = params.get('error');
-        const state = params.get('state');
+        const urlParams = new URLSearchParams(location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const state = urlParams.get('state');
         
         console.log('Auth callback parameters:', { 
           code: code ? "Received" : null, 
@@ -166,7 +165,7 @@ const AuthCallback: React.FC = () => {
     };
 
     processAuth();
-  }, [location, navigate, params]);
+  }, [location, navigate, routeParams]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
