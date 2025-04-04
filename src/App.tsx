@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CalendarProvider } from "./contexts/CalendarContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -20,11 +20,12 @@ const App = () => (
           <Sonner />
           <Routes>
             <Route path="/" element={<Index />} />
+            {/* Handle all auth callback patterns */}
             <Route path="/auth/callback" element={<AuthCallback />} />
-            {/* Forward /auth/google to callback for handling the OAuth flow properly */}
             <Route path="/auth/google" element={<AuthCallback />} />
-            {/* Add route for state parameter handling from Telegram */}
             <Route path="/auth/google/:state" element={<AuthCallback />} />
+            {/* Catch-all wildcard route for /auth/google with query parameters */}
+            <Route path="/auth/*" element={<AuthCallback />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </CalendarProvider>

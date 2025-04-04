@@ -54,7 +54,7 @@ export class TelegramCalendarManager {
       baseUrl = baseUrl + '/';
     }
     
-    // Fix the URL structure to match our route configuration
+    // Use the consistent auth endpoint that will be captured by our catch-all route
     return `${baseUrl}auth/google?state=${state}`;
   }
   

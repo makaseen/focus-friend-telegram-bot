@@ -16,32 +16,44 @@ const AuthCallback: React.FC = () => {
   const routeParams = useParams<{ state?: string }>();
   
   useEffect(() => {
+    console.log('Auth callback component mounted on path:', location.pathname);
+    console.log('URL search params:', location.search);
+    console.log('Route params:', routeParams);
+
     const processAuth = async () => {
       try {
-        console.log('Processing auth callback on path:', location.pathname, 'with search:', location.search);
-        
         // Check if this is the initial auth request or the callback
         const isInitialAuth = location.pathname.startsWith('/auth/google');
         const isCallback = location.pathname === '/auth/callback';
         
         console.log('Auth type:', { isInitialAuth, isCallback });
         
+        // Get state from either URL parameters, query string, or path segments
+        let state = '';
+        const urlParams = new URLSearchParams(location.search);
+        
+        // Try all possible state sources
+        if (routeParams.state) {
+          // From URL parameter
+          state = routeParams.state;
+          console.log('Found state in route params:', state);
+        } else if (urlParams.get('state')) {
+          // From query string
+          state = urlParams.get('state') || '';
+          console.log('Found state in URL search params:', state);
+        } else if (location.pathname.includes('telegram-')) {
+          // From path segment
+          const match = location.pathname.match(/telegram-[^\/&?]+/);
+          if (match) {
+            state = match[0];
+            console.log('Extracted state from path:', state);
+          }
+        }
+        
+        console.log('Using state:', state);
+        
         if (isInitialAuth && !isCallback) {
           console.log('Initial auth request, redirecting to Google...');
-          
-          // Get state from either URL parameters or query string
-          let state = '';
-          
-          // Check if it's in the URL parameters (from router params)
-          if (routeParams.state) {
-            state = routeParams.state;
-          } else {
-            // If not in URL params, try to get it from query string
-            const urlParams = new URLSearchParams(location.search);
-            state = urlParams.get('state') || '';
-          }
-          
-          console.log('Using state:', state);
           
           // Get the client ID from localStorage
           const clientId = localStorage.getItem('googleCalendarClientId');
@@ -72,10 +84,8 @@ const AuthCallback: React.FC = () => {
         }
         
         // Handle callback - This is the OAuth callback from Google
-        const urlParams = new URLSearchParams(location.search);
         const code = urlParams.get('code');
         const error = urlParams.get('error');
-        const state = urlParams.get('state');
         
         console.log('Auth callback parameters:', { 
           code: code ? "Received" : null, 

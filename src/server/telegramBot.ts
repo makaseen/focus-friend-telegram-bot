@@ -231,9 +231,9 @@ app.get('/env-check', (req, res) => {
   res.status(200).json(envInfo);
 });
 
-// Add Google OAuth routes
+// Add Google OAuth routes with improved error handling
 app.get('/auth/google', (req, res) => {
-  console.log('Received request to /auth/google endpoint');
+  console.log('Received request to /auth/google endpoint with query:', req.query);
   
   // Extract the state from query parameters
   const state = req.query.state as string;
@@ -243,8 +243,9 @@ app.get('/auth/google', (req, res) => {
     return res.status(400).send('Error: No state parameter provided');
   }
   
-  // Construct SPA URL for handling auth
-  const redirectUrl = `/auth/google/${encodeURIComponent(state)}`;
+  // Construct SPA URL for handling auth - preserve all query parameters
+  const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+  const redirectUrl = `/auth/google?${queryString}`;
   
   console.log(`Redirecting to SPA auth handler: ${redirectUrl}`);
   res.redirect(redirectUrl);
@@ -268,6 +269,21 @@ app.get('/auth/callback', (req, res) => {
   
   console.log(`Redirecting to SPA callback handler: ${redirectUrl}`);
   res.redirect(redirectUrl);
+});
+
+// Add a wildcard route to handle any other auth-related paths
+app.get('/auth/*', (req, res) => {
+  console.log('Received request to wildcard auth endpoint:', req.path, 'with query:', req.query);
+  
+  // Get the original path without the leading slash
+  const originalPath = req.path;
+  
+  // Make a query string from all parameters
+  const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+  const redirectPath = queryString ? `${originalPath}?${queryString}` : originalPath;
+  
+  console.log(`Redirecting to SPA path: ${redirectPath}`);
+  res.redirect(redirectPath);
 });
 
 // Root endpoint to verify server is running
