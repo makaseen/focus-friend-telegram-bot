@@ -10,10 +10,13 @@ export const CalendarContext = createContext<CalendarContextType | undefined>(un
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) => {
   const [calendarConnected, setCalendarConnected] = useState<boolean>(false);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [clientId, setClientId] = useState<string>('');
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<number>(0);
+  const MIN_REFRESH_INTERVAL = 10000; // 10 seconds
 
   // Check if calendar API is configured
   const isConfigured = googleCalendarApi.isConfigured();
@@ -71,6 +74,8 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
 
   // Connect to Google Calendar
   const connectCalendar = async () => {
+    if (isConnecting) return; // Prevent multiple connection attempts
+    
     setIsConnecting(true);
     setError(null);
     
@@ -130,43 +135,69 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
 
   // Fetch calendar events
   const refreshEvents = async (): Promise<void> => {
-    // Force refresh token from storage before checking
-    googleCalendarApi.loadTokenFromStorage();
+    const now = Date.now();
     
-    // Check if authenticated before proceeding
-    if (!googleCalendarApi.isAuthenticated()) {
-      console.warn('Attempted to fetch events but calendar is not connected.');
-      setCalendarConnected(false);
-      saveConnectionStatus(false);
+    // Prevent multiple concurrent refreshes
+    if (isRefreshing) {
+      console.log("Already refreshing events, request ignored");
       return;
     }
     
+    // Apply throttling except for first load
+    if (lastRefresh > 0 && now - lastRefresh < MIN_REFRESH_INTERVAL) {
+      console.log(`Events refresh throttled. Last refresh ${(now - lastRefresh) / 1000}s ago`);
+      return;
+    }
+    
+    setIsRefreshing(true);
     setIsLoading(true);
-    setError(null);
     
     try {
+      // Force refresh token from storage before checking
+      googleCalendarApi.loadTokenFromStorage();
+      
+      // Check if authenticated before proceeding
+      if (!googleCalendarApi.isAuthenticated()) {
+        console.warn('Attempted to fetch events but calendar is not connected.');
+        setCalendarConnected(false);
+        saveConnectionStatus(false);
+        setEvents([]);
+        return;
+      }
+      
       console.log("Fetching calendar events...");
       const calendarEvents = await googleCalendarApi.getUpcomingEvents(10);
       console.log("Received events:", calendarEvents.length);
       setEvents(calendarEvents);
+      setLastRefresh(Date.now());
       
       // If we successfully got events, ensure connection state is true
       setCalendarConnected(true);
       saveConnectionStatus(true);
     } catch (err) {
       console.error('Error fetching events:', err);
-      toast({
-        title: "Calendar Error",
-        description: "Failed to fetch calendar events. Please reconnect your calendar.",
-        variant: "destructive"
-      });
+      
+      // Only show toast on actual failures, not throttling
+      if (lastRefresh === 0 || now - lastRefresh > MIN_REFRESH_INTERVAL) {
+        toast({
+          title: "Calendar Error",
+          description: "Failed to fetch calendar events. Please reconnect your calendar.",
+          variant: "destructive"
+        });
+      }
+      
       // If we get auth errors, reset the connection state
       if (err instanceof Error && err.message.includes('Not authenticated')) {
         setCalendarConnected(false);
         saveConnectionStatus(false);
+        setEvents([]);
       }
     } finally {
       setIsLoading(false);
+      // Add a small delay before allowing additional refreshes to prevent race conditions
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 500);
     }
   };
 

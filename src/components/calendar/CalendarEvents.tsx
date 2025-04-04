@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, RefreshCw } from 'lucide-react';
 
 interface CalendarEventsProps {
   events: any[];
@@ -9,9 +9,27 @@ interface CalendarEventsProps {
 }
 
 const CalendarEvents = ({ events, refreshEvents }: CalendarEventsProps) => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   if (events.length === 0) {
     return null;
   }
+  
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    
+    try {
+      setIsRefreshing(true);
+      await refreshEvents();
+    } catch (error) {
+      console.error("Error refreshing events:", error);
+    } finally {
+      // Add a minimum visual feedback time
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 500);
+    }
+  };
   
   return (
     <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -23,7 +41,7 @@ const CalendarEvents = ({ events, refreshEvents }: CalendarEventsProps) => {
         {events.slice(0, 3).map((event, index) => {
           const start = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
           return (
-            <li key={index} className="text-sm">
+            <li key={event.id || index} className="text-sm">
               <span className="font-medium">{event.summary}</span>
               <br />
               <span className="text-muted-foreground">
@@ -36,10 +54,21 @@ const CalendarEvents = ({ events, refreshEvents }: CalendarEventsProps) => {
       <Button 
         variant="link" 
         size="sm" 
-        className="mt-2 p-0 h-auto text-focus"
-        onClick={() => refreshEvents()}
+        className="mt-2 p-0 h-auto text-focus flex items-center"
+        onClick={handleRefresh}
+        disabled={isRefreshing}
       >
-        Refresh events
+        {isRefreshing ? (
+          <>
+            <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+            Refreshing...
+          </>
+        ) : (
+          <>
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Refresh events
+          </>
+        )}
       </Button>
     </div>
   );
