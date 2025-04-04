@@ -25,6 +25,14 @@ const steps = [
 ];
 
 const HowItWorksSection = () => {
+  const handleGetStarted = () => {
+    // Scroll to setup section when button is clicked
+    const setupSection = document.getElementById('setup');
+    if (setupSection) {
+      setupSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="py-16 bg-white" id="how-it-works">
       <div className="container">
@@ -60,7 +68,11 @@ const HowItWorksSection = () => {
         </div>
         
         <div className="mt-12 text-center">
-          <Button className="bg-focus hover:bg-focus-dark" size="lg">
+          <Button 
+            className="bg-focus hover:bg-focus-dark" 
+            size="lg"
+            onClick={handleGetStarted}
+          >
             Get Started with Focus Friend
           </Button>
         </div>

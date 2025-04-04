@@ -112,6 +112,13 @@ const HeroSection = () => {
             Note: For this demo, the bot may not be active. In a real implementation, 
             you would need to create and host your own Telegram bot.
           </p>
+          
+          <Button 
+            className="w-full mt-4 bg-focus hover:bg-focus-dark"
+            onClick={() => setShowBotModal(false)}
+          >
+            Got it
+          </Button>
         </div>
       </Modal>
 
