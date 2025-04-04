@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
     headers: {
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://cdn.gpteng.co; connect-src 'self' https://accounts.google.com https://apis.google.com https://www.googleapis.com; frame-src https://accounts.google.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline';"
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://cdn.gpteng.co; connect-src 'self' https://accounts.google.com https://apis.google.com https://www.googleapis.com; frame-src https://accounts.google.com https://content.googleapis.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline';"
     }
   },
   plugins: [
