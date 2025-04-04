@@ -43,17 +43,25 @@ export class TelegramCalendarManager {
     // Use config.apiBaseUrl or determine the correct base URL
     let baseUrl;
     
-    // In development, always use the bot server's URL (port 3001)
+    // In development, we need a public HTTPS URL for Telegram inline buttons
+    // For local development testing, we'll use ngrok or a similar HTTPS URL
     if (process.env.NODE_ENV !== 'production') {
-      baseUrl = 'http://localhost:3001';
-      console.log(`Using development bot server URL: ${baseUrl}`);
+      // Default to a public staging URL if available in config, otherwise use production URL
+      baseUrl = config.stagingUrl || config.apiBaseUrl;
+      console.log(`Using development public URL: ${baseUrl}`);
+      
+      if (!baseUrl || !baseUrl.startsWith('https://')) {
+        // Fallback to the production URL as Telegram requires HTTPS
+        baseUrl = 'https://focus-friend-telegram-bot.lovable.app';
+        console.log(`No valid HTTPS URL available, using default: ${baseUrl}`);
+      }
     } else {
       // Use the configured apiBaseUrl for production
       baseUrl = config.apiBaseUrl;
       console.log(`Using production API base URL: ${baseUrl}`);
       
       // If apiBaseUrl is not set or invalid, use a default
-      if (!baseUrl || !baseUrl.startsWith('http')) {
+      if (!baseUrl || !baseUrl.startsWith('https://')) {
         baseUrl = 'https://focus-friend-telegram-bot.lovable.app';
         console.log(`API base URL not set or invalid, using default: ${baseUrl}`);
       }
