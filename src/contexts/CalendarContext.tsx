@@ -4,6 +4,7 @@ import { toast } from "@/hooks/use-toast";
 import { googleCalendarApi } from "@/utils/googleCalendar";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { CalendarIcon } from "lucide-react";
+// Remove BrowserRouter import if it exists
 
 interface CalendarContextType {
   calendarConnected: boolean;
@@ -156,6 +157,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Return the provider without any router
   return (
     <CalendarContext.Provider value={{ 
       calendarConnected, 

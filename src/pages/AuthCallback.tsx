@@ -21,7 +21,9 @@ const AuthCallback: React.FC = () => {
           console.log('Initial auth request, redirecting to Google...');
           // This is the initial request, redirect to Google OAuth
           const state = location.search.substring(1); // Remove the ? from the search params
-          window.location.href = `https://accounts.google.com/o/oauth2/auth?client_id=${googleCalendarApi.getClientId()}&redirect_uri=${encodeURIComponent(`https://preview--focus-friend-telegram-bot.lovable.app/auth/callback`)}&scope=https://www.googleapis.com/auth/calendar&response_type=code&state=${state}&access_type=offline&prompt=consent`;
+          // Use the client ID directly from localStorage since getClientId doesn't exist
+          const clientId = localStorage.getItem('googleCalendarClientId') || '';
+          window.location.href = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(`https://preview--focus-friend-telegram-bot.lovable.app/auth/callback`)}&scope=https://www.googleapis.com/auth/calendar&response_type=code&state=${state}&access_type=offline&prompt=consent`;
           return;
         }
         
