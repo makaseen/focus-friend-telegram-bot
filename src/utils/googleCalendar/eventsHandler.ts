@@ -3,6 +3,7 @@ import { loadGoogleApi } from './apiLoader';
 import { tokenManager } from './tokenManager';
 import { handleApiError } from './utils';
 import { PRIMARY_CALENDAR_ID, MAX_TIME_RANGE_MS } from './constants';
+import { CalendarEventListParams } from './types';
 
 /**
  * Handles fetching events from Google Calendar API
