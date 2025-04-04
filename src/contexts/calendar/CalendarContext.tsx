@@ -11,16 +11,20 @@ type CalendarProviderProps = {
 };
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) => {
-  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [calendarConnected, setCalendarConnected] = useState<boolean>(false);
+  const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [clientId, setClientId] = useState<string>('');
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if calendar API is configured
+  const isConfigured = googleCalendarApi.isConfigured();
+
   useEffect(() => {
     // Check if we have previously connected status
     const connected = getSavedConnectionStatus();
-    setIsConnected(connected);
+    setCalendarConnected(connected);
     
     // Load client ID from storage if available
     const savedClientId = localStorage.getItem('googleCalendarClientId') || '';
@@ -28,26 +32,28 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
   }, []);
 
   // Connect to Google Calendar
-  const connectCalendar = async (newClientId: string) => {
-    setIsLoading(true);
+  const connectCalendar = async () => {
+    setIsConnecting(true);
     setError(null);
     
     try {
-      // Save client ID
-      localStorage.setItem('googleCalendarClientId', newClientId);
-      setClientId(newClientId);
+      // Attempt to sign in using the Google Calendar API
+      const success = await googleCalendarApi.signIn();
       
-      // Get authorization URL
-      const authUrl = await googleCalendarApi.getAuthUrl(newClientId);
-      
-      // Redirect to auth URL
-      window.location.href = authUrl;
+      if (success) {
+        setCalendarConnected(true);
+        // Fetch events after successful connection
+        await refreshEvents();
+      } else {
+        setCalendarConnected(false);
+        setError('Failed to connect to Google Calendar.');
+      }
     } catch (err) {
       console.error('Error connecting to calendar:', err);
       setError('Failed to connect to Google Calendar. Please check your client ID and try again.');
-      setIsConnected(false);
+      setCalendarConnected(false);
     } finally {
-      setIsLoading(false);
+      setIsConnecting(false);
     }
   };
 
@@ -58,7 +64,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     try {
       // Clear storage
       googleCalendarApi.signOut();
-      setIsConnected(false);
+      setCalendarConnected(false);
       setEvents([]);
       setError(null);
     } catch (err) {
@@ -69,9 +75,20 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     }
   };
 
+  // Update client ID
+  const updateClientId = (newClientId: string) => {
+    googleCalendarApi.setClientId(newClientId);
+    setClientId(newClientId);
+  };
+
+  // Update client secret
+  const updateClientSecret = (clientSecret: string) => {
+    googleCalendarApi.setClientSecret(clientSecret);
+  };
+
   // Fetch calendar events
-  const fetchEvents = async (startDate?: Date, endDate?: Date) => {
-    if (!isConnected) {
+  const refreshEvents = async () => {
+    if (!calendarConnected) {
       setError('Calendar is not connected.');
       return [];
     }
@@ -80,7 +97,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     setError(null);
     
     try {
-      const calendarEvents = await googleCalendarApi.listEvents(startDate, endDate);
+      const calendarEvents = await googleCalendarApi.getUpcomingEvents(10);
       setEvents(calendarEvents);
       return calendarEvents;
     } catch (err) {
@@ -92,15 +109,16 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     }
   };
 
-  const value = {
-    isConnected,
-    clientId,
-    events,
-    isLoading,
-    error,
+  const value: CalendarContextType = {
+    calendarConnected,
+    isConnecting,
+    isConfigured,
     connectCalendar,
     disconnectCalendar,
-    fetchEvents
+    updateClientId,
+    updateClientSecret,
+    events,
+    refreshEvents
   };
 
   return (
