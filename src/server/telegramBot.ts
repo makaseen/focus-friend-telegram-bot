@@ -116,9 +116,9 @@ bot.use((ctx, next) => {
   return next();
 });
 
-// Set up webhook or polling based on environment
-if (config.environment === 'production') {
-  // Webhook for production
+// Set up webhook or polling based on configuration
+if (config.useWebhook) {
+  // Webhook mode
   const webhookPath = `/telegram-webhook/${config.webhookSecret}`;
   
   app.post(webhookPath, (req, res) => {
@@ -142,15 +142,22 @@ if (config.environment === 'production') {
     })
     .catch((error) => {
       console.error('Failed to set webhook:', error);
+      console.log('Attempting to launch in polling mode as fallback...');
+      return bot.launch().catch(e => {
+        console.error('Failed to launch in polling mode:', e);
+        process.exit(1);
+      });
     });
 } else {
-  // Polling for development
+  // Polling mode (development)
+  console.log('Starting bot in polling mode (development)...');
   bot.launch()
     .then(() => {
-      console.log('Bot is running in polling mode');
+      console.log('Bot is running successfully in polling mode');
     })
     .catch((error) => {
       console.error('Failed to start bot in polling mode:', error);
+      process.exit(1);
     });
 }
 
