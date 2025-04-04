@@ -1,4 +1,3 @@
-
 import { Context } from 'telegraf';
 import { googleCalendarApi } from '../utils/googleCalendar/index.js';
 import { CalendarEvent, TokenResponse } from '../utils/googleCalendar/types.js';
@@ -40,21 +39,14 @@ export class TelegramCalendarManager {
   getAuthUrl(userId: number): string {
     const state = this.generateOAuthState(userId);
     
-    // Use config.apiBaseUrl or determine the correct base URL
+    // Always prioritize the staging URL for Telegram in development
     let baseUrl;
     
     // In development, we need a public HTTPS URL for Telegram inline buttons
-    // For local development testing, we'll use ngrok or a similar HTTPS URL
     if (process.env.NODE_ENV !== 'production') {
-      // Default to a public staging URL if available in config, otherwise use production URL
-      baseUrl = config.stagingUrl || config.apiBaseUrl;
+      // Always use the staging URL for development
+      baseUrl = config.stagingUrl;
       console.log(`Using development public URL: ${baseUrl}`);
-      
-      if (!baseUrl || !baseUrl.startsWith('https://')) {
-        // Fallback to the production URL as Telegram requires HTTPS
-        baseUrl = 'https://focus-friend-telegram-bot.lovable.app';
-        console.log(`No valid HTTPS URL available, using default: ${baseUrl}`);
-      }
     } else {
       // Use the configured apiBaseUrl for production
       baseUrl = config.apiBaseUrl;
@@ -68,6 +60,11 @@ export class TelegramCalendarManager {
     }
     
     // Ensure we have a properly formatted URL
+    if (!baseUrl.startsWith('https://')) {
+      baseUrl = `https://${baseUrl}`;
+      console.log(`Added https:// prefix to URL: ${baseUrl}`);
+    }
+    
     if (baseUrl.endsWith('/')) {
       baseUrl = baseUrl.slice(0, -1);
     }

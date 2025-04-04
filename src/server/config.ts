@@ -10,7 +10,7 @@ export const config = {
   webhookSecret: process.env.WEBHOOK_SECRET || '',
   port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3001,
   apiBaseUrl: process.env.API_BASE_URL || '',
-  stagingUrl: process.env.STAGING_URL || '', // New config for staging/development HTTPS URL
+  stagingUrl: process.env.STAGING_URL || 'https://guiding-resolved-mite.ngrok-free.app', // Default to your ngrok URL
   environment: process.env.NODE_ENV || 'development',
   // Default to polling mode unless explicitly set to use webhook
   useWebhook: process.env.USE_WEBHOOK === 'true',
