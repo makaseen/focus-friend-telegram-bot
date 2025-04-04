@@ -2,12 +2,13 @@
 import { Context } from 'telegraf';
 import { formatDistance } from 'date-fns';
 import { TelegramCalendarManager } from '../telegramCalendarManager';
+import { UserSession } from '../sessionManager';
 
 export async function handleCalendarCommand(
   ctx: Context, 
   userId: number, 
   calendarManager: TelegramCalendarManager,
-  userSessions: Record<number, any>
+  userSessions: Record<number, UserSession>
 ) {
   if (calendarManager.isCalendarConnected(userId)) {
     await ctx.reply("Your Google Calendar is already connected! Here are some commands you can use:\n\n/schedule - See today's events\n/next - See your next upcoming event");
@@ -28,17 +29,16 @@ export async function handleCalendarCommand(
     }
   );
   
-  userSessions[userId] = {
-    ...userSessions[userId],
-    state: 'awaiting_calendar_auth'
-  };
+  if (userSessions[userId]) {
+    userSessions[userId].state = 'awaiting_calendar_auth';
+  }
 }
 
 export async function handleScheduleCommand(
   ctx: Context, 
   userId: number, 
   calendarManager: TelegramCalendarManager,
-  userSessions: Record<number, any>
+  userSessions: Record<number, UserSession>
 ) {
   if (!calendarManager.isCalendarConnected(userId)) {
     await ctx.reply(
@@ -81,7 +81,7 @@ export async function handleNextEventCommand(
   ctx: Context, 
   userId: number, 
   calendarManager: TelegramCalendarManager,
-  userSessions: Record<number, any>
+  userSessions: Record<number, UserSession>
 ) {
   if (!calendarManager.isCalendarConnected(userId)) {
     await ctx.reply(
