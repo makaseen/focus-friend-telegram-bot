@@ -130,28 +130,18 @@ const initializeGapiClient = (resolve: () => void, reject: (error: any) => void)
   
   // Add a try-catch around the initialization to better handle errors
   try {
-    window.gapi.load('client', {
-      callback: () => {
-        window.gapi.client.init({})
-          .then(() => {
-            // Load the Calendar API
-            return window.gapi.client.load('calendar', 'v3');
-          })
-          .then(() => {
-            console.log("Google Calendar API loaded successfully");
-            isApiLoading = false;
-            isApiInitialized = true;
-            resolve();
-          })
-          .catch((error: any) => {
-            console.error("Error loading Calendar API:", error);
-            handleApiError(error, "Google Calendar API Loading Failed");
-            isApiLoading = false;
-            reject(error);
-          });
-      },
-      onerror: (error: any) => {
-        console.error("Error loading GAPI client:", error);
+    window.gapi.load('client', async () => {
+      try {
+        await window.gapi.client.init({});
+        await window.gapi.client.load('calendar', 'v3');
+        
+        console.log("Google Calendar API loaded successfully");
+        isApiLoading = false;
+        isApiInitialized = true;
+        resolve();
+      } catch (error) {
+        console.error("Error loading Calendar API:", error);
+        handleApiError(error, "Google Calendar API Loading Failed");
         isApiLoading = false;
         reject(error);
       }

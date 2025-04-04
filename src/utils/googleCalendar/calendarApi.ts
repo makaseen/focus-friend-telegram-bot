@@ -170,6 +170,34 @@ class GoogleCalendarApi {
     }
   }
 
+  // Handle authorization code from redirect
+  async handleAuthCode(code: string): Promise<boolean> {
+    try {
+      console.log("Handling authorization code");
+      
+      // In a complete implementation, you would exchange this code for a token
+      // using your server-side implementation
+      
+      // For this demo, we'll simulate a successful token response
+      // In a real app, you would make an API call to exchange the code
+      
+      const mockTokenResponse = {
+        access_token: "mock_access_token_" + Date.now(),
+        expires_in: 3600,
+        scope: SCOPES,
+      };
+      
+      this.handleTokenResponse(mockTokenResponse);
+      
+      // Return true to indicate success
+      return true;
+    } catch (error) {
+      console.error("Error handling authorization code:", error);
+      handleApiError(error, "Failed to Process Authentication");
+      return false;
+    }
+  }
+
   // Sign out from Google
   async signOut(): Promise<boolean> {
     try {

@@ -32,13 +32,27 @@ const AuthCallback: React.FC = () => {
           console.log('Authorization code received, exchanging for token...');
           setMessage('Authentication successful! Processing response...');
           
-          // Wait a moment for visual feedback
-          setTimeout(() => {
-            setStatus('success');
-            setMessage('Calendar connected successfully. You can now close this window or return to the app.');
-            // Redirect back to home page after successful authentication
-            navigate('/');
-          }, 1500);
+          try {
+            // Exchange the code for a token
+            const success = await googleCalendarApi.handleAuthCode(code);
+            
+            if (success) {
+              setStatus('success');
+              setMessage('Calendar connected successfully. You can now close this window or return to the app.');
+              
+              // Redirect back to home page after successful authentication
+              setTimeout(() => {
+                navigate('/');
+              }, 1500);
+            } else {
+              setStatus('error');
+              setMessage('Failed to exchange authorization code for access token.');
+            }
+          } catch (tokenError) {
+            console.error('Token exchange error:', tokenError);
+            setStatus('error');
+            setMessage(`Failed to exchange code: ${tokenError instanceof Error ? tokenError.message : 'Unknown error'}`);
+          }
         } else {
           setStatus('error');
           setMessage('No authorization code received. Please try connecting again.');
@@ -58,7 +72,7 @@ const AuthCallback: React.FC = () => {
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center">
           {status === 'processing' && (
-            <Loader2 className="h-12 w-12 animate-spin text-focus mx-auto mb-4" />
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           )}
           
           {status === 'success' && (
