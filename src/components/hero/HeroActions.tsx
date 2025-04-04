@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { BotIcon, CalendarIcon } from 'lucide-react';
+import { BotIcon, CalendarIcon, ShieldAlert } from 'lucide-react';
 
 interface HeroActionsProps {
   onGetStarted: () => void;
@@ -21,7 +21,7 @@ const HeroActions = ({
   return (
     <div className="flex flex-col gap-3 min-[400px]:flex-row">
       <Button 
-        className="bg-focus hover:bg-focus-dark" 
+        className="bg-focus hover:bg-focus-dark shadow-sm transition-all duration-300" 
         size="lg"
         onClick={onGetStarted}
         aria-label="Get Started with Focus Friend"
@@ -35,6 +35,7 @@ const HeroActions = ({
           size="lg"
           onClick={onDisconnectCalendar}
           aria-label="Disconnect Google Calendar"
+          className="border-focus text-focus hover:bg-focus/10"
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           Disconnect Calendar
@@ -46,6 +47,7 @@ const HeroActions = ({
           onClick={onConnectCalendar}
           disabled={isConnecting}
           aria-label="Connect Google Calendar"
+          className="border-focus text-focus hover:bg-focus/10"
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {isConnecting ? "Connecting..." : "Connect Google Calendar"}
