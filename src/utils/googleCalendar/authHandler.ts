@@ -83,7 +83,7 @@ export class AuthHandler {
             toast({
               title: "Limited Calendar Access",
               description: "Some calendar permissions were not granted. You may need to reconnect for full functionality.",
-              variant: "warning"
+              variant: "destructive" // Changed from "warning" to "destructive"
             });
           }
           

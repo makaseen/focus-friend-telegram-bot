@@ -1,4 +1,3 @@
-
 import { loadGoogleApi } from './apiLoader';
 import { tokenManager } from './tokenManager';
 import { handleApiError } from './utils';
@@ -170,9 +169,8 @@ export class EventsHandler {
       try {
         const response = await window.gapi.client.calendar.events.list(params);
         
-        // Add more detailed response logging
+        // Add more detailed response logging - remove the status property that doesn't exist
         console.log("Calendar API response received:", { 
-          status: response.status, 
           resultLength: response.result?.items?.length || 0 
         });
         
