@@ -17,6 +17,16 @@ try {
   console.error('Could not load environment variables', e);
 }
 
+// Load from localStorage if available
+try {
+  const savedClientId = localStorage.getItem('googleCalendarClientId');
+  if (savedClientId) {
+    CLIENT_ID = savedClientId;
+  }
+} catch (e) {
+  console.error('Could not load client ID from localStorage', e);
+}
+
 // Display meaningful error message for common OAuth errors
 const getOAuthErrorMessage = (error: any): string => {
   console.error('OAuth error details:', error);
@@ -27,6 +37,11 @@ const getOAuthErrorMessage = (error: any): string => {
   
   if (error?.error === 'access_denied') {
     return "You denied access to your Google Calendar.";
+  }
+  
+  // Check for specific error messages in the error object
+  if (error?.details && typeof error.details === 'string' && error.details.includes('invalid_client')) {
+    return "Invalid OAuth client ID. Please check your Google Cloud Console configuration.";
   }
   
   return "An error occurred during Google authentication. Please try again.";
@@ -43,6 +58,7 @@ export interface TokenResponse {
 class GoogleCalendarApi {
   token: TokenResponse | null = null;
   gapiLoaded: boolean = false;
+  gapiInitialized: boolean = false;
   
   constructor() {
     // Attempt to load token from localStorage
@@ -70,17 +86,12 @@ class GoogleCalendarApi {
       if (!CLIENT_ID) {
         const errorMsg = "Google client ID is not configured. Please set up your OAuth credentials.";
         console.error(errorMsg);
-        toast({
-          title: "Configuration Error",
-          description: errorMsg,
-          variant: "destructive"
-        });
         reject(new Error(errorMsg));
         return;
       }
       
-      // If already loaded, resolve immediately
-      if (this.gapiLoaded && window.gapi) {
+      // If already loaded and initialized, resolve immediately
+      if (this.gapiInitialized && window.gapi) {
         resolve();
         return;
       }
@@ -95,27 +106,9 @@ class GoogleCalendarApi {
         
         script.onload = () => {
           console.log("Google API script loaded");
+          this.gapiLoaded = true;
           // Initialize the client
-          window.gapi.load('client:auth2', () => {
-            window.gapi.client.init({
-              clientId: CLIENT_ID,
-              scope: SCOPES,
-              plugin_name: 'Focus Friend'
-            }).then(() => {
-              console.log("Google API client initialized");
-              this.gapiLoaded = true;
-              resolve();
-            }).catch((error: any) => {
-              console.error("Error initializing Google API client:", error);
-              const errorMessage = getOAuthErrorMessage(error);
-              toast({
-                title: "Google API Initialization Failed",
-                description: errorMessage,
-                variant: "destructive"
-              });
-              reject(error);
-            });
-          });
+          this.initializeGapiClient(resolve, reject);
         };
 
         script.onerror = (error) => {
@@ -124,36 +117,17 @@ class GoogleCalendarApi {
         };
 
         document.body.appendChild(script);
+      } else if (window.gapi) {
+        // Script already loaded
+        this.gapiLoaded = true;
+        this.initializeGapiClient(resolve, reject);
       } else {
-        // Script already in DOM but not fully loaded
+        // Script in DOM but not loaded yet
         const checkGapi = setInterval(() => {
           if (window.gapi) {
             clearInterval(checkGapi);
-            if (!window.gapi.auth2) {
-              window.gapi.load('client:auth2', () => {
-                window.gapi.client.init({
-                  clientId: CLIENT_ID,
-                  scope: SCOPES,
-                  plugin_name: 'Focus Friend'
-                }).then(() => {
-                  console.log("Google API client initialized");
-                  this.gapiLoaded = true;
-                  resolve();
-                }).catch((error: any) => {
-                  console.error("Error initializing Google API client:", error);
-                  const errorMessage = getOAuthErrorMessage(error);
-                  toast({
-                    title: "Google API Initialization Failed",
-                    description: errorMessage,
-                    variant: "destructive"
-                  });
-                  reject(error);
-                });
-              });
-            } else {
-              this.gapiLoaded = true;
-              resolve();
-            }
+            this.gapiLoaded = true;
+            this.initializeGapiClient(resolve, reject);
           }
         }, 100);
         
@@ -166,6 +140,41 @@ class GoogleCalendarApi {
     });
   }
 
+  // Initialize the GAPI client library
+  private initializeGapiClient(resolve: () => void, reject: (error: any) => void): void {
+    if (!window.gapi) {
+      reject(new Error("Google API not loaded"));
+      return;
+    }
+
+    window.gapi.load('client:auth2', () => {
+      try {
+        console.log("Initializing Google API client with client ID:", CLIENT_ID);
+        window.gapi.client.init({
+          clientId: CLIENT_ID,
+          scope: SCOPES,
+          plugin_name: 'Focus Friend'
+        }).then(() => {
+          console.log("Google API client initialized successfully");
+          this.gapiInitialized = true;
+          resolve();
+        }).catch((error: any) => {
+          console.error("Error initializing Google API client:", error);
+          const errorMessage = getOAuthErrorMessage(error);
+          toast({
+            title: "Google API Initialization Failed",
+            description: errorMessage,
+            variant: "destructive"
+          });
+          reject(error);
+        });
+      } catch (error) {
+        console.error("Exception initializing Google API client:", error);
+        reject(error);
+      }
+    });
+  }
+
   // Check if client ID is set
   isConfigured(): boolean {
     return !!CLIENT_ID && CLIENT_ID.length > 0;
@@ -173,11 +182,18 @@ class GoogleCalendarApi {
 
   // Update client ID (useful for runtime configuration)
   setClientId(clientId: string): void {
-    CLIENT_ID = clientId;
+    if (!clientId || clientId.trim() === '') {
+      return;
+    }
+    
+    CLIENT_ID = clientId.trim();
+    localStorage.setItem('googleCalendarClientId', CLIENT_ID);
+    console.log("Client ID set:", CLIENT_ID);
+    
     // Clear existing auth state when changing client ID
     this.token = null;
     localStorage.removeItem('googleCalendarToken');
-    this.gapiLoaded = false;
+    this.gapiInitialized = false;
   }
 
   // Handle the Google Sign In process
@@ -199,7 +215,9 @@ class GoogleCalendarApi {
       console.log("Getting auth instance");
       const googleAuth = window.gapi.auth2.getAuthInstance();
       console.log("Signing in with Google");
-      const user = await googleAuth.signIn();
+      const user = await googleAuth.signIn({
+        prompt: 'consent' // Always show the consent screen
+      });
       const authResponse = user.getAuthResponse();
       
       console.log("Successfully authenticated with Google");

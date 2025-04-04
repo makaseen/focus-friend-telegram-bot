@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { googleCalendarApi } from "@/utils/googleCalendarApi";
@@ -50,7 +51,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   const updateClientId = (clientId: string) => {
     if (clientId && clientId.trim() !== '') {
-      googleCalendarApi.setClientId(clientId);
+      googleCalendarApi.setClientId(clientId.trim());
       setIsConfigured(true);
       toast({
         title: "Client ID Updated",
@@ -92,18 +93,20 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         
         // Fetch events after successful connection
         await refreshEvents();
+      } else {
+        // Failed to connect - the toast is already shown in the API
+        console.log("Connection returned false");
       }
-      
-      setIsConnecting(false);
     } catch (error) {
-      setIsConnecting(false);
-      console.error("Calendar connection failed:", error);
+      console.error("Calendar connection failed with exception:", error);
       
       toast({
         title: "Connection Failed",
-        description: "Could not connect to Google Calendar.",
+        description: "Could not connect to Google Calendar. Please check your client ID.",
         variant: "destructive",
       });
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -182,6 +185,7 @@ export function CalendarConfigAlert() {
       <AlertTitle>Google Calendar Setup Needed</AlertTitle>
       <AlertDescription>
         <p className="mb-2">You need to set up Google OAuth credentials to use the Calendar feature.</p>
+        <p className="mb-2 text-xs">Error: Unable to authenticate with Google. Please provide a valid client ID.</p>
         {!showInput ? (
           <button 
             onClick={() => setShowInput(true)}

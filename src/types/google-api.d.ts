@@ -2,6 +2,10 @@
 // Type definitions for Google API Client
 
 interface Window {
+  __ENV__?: {
+    GOOGLE_CLIENT_ID?: string;
+    [key: string]: any;
+  };
   gapi: {
     load: (api: string, callback: () => void) => void;
     client: {
@@ -30,7 +34,7 @@ interface Window {
     };
     auth2: {
       getAuthInstance: () => {
-        signIn: () => Promise<{
+        signIn: (options?: { prompt?: 'none' | 'consent' | 'select_account' }) => Promise<{
           getAuthResponse: () => {
             access_token: string;
             expires_in: number;
