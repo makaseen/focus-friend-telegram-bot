@@ -22,10 +22,13 @@ export const validateConfig = (): boolean => {
   if (!config.telegramToken) {
     console.error('ERROR: TELEGRAM_BOT_TOKEN is missing in environment variables');
     isValid = false;
+  } else if (config.telegramToken.indexOf(':') === -1) {
+    console.error('ERROR: TELEGRAM_BOT_TOKEN appears to be invalid (missing colon separator)');
+    console.error('Token format should be: <numbers>:<alphanumeric string>');
+    isValid = false;
   } else {
-    console.log('Token appears to be set correctly:', 
-      config.telegramToken.substring(0, 5) + '...' + 
-      config.telegramToken.substring(config.telegramToken.length - 5));
+    const tokenPreview = config.telegramToken.slice(0, 5) + '...' + config.telegramToken.slice(-5);
+    console.log(`Token appears to be set: ${tokenPreview}`);
   }
   
   // Only validate webhook config if we're using webhooks

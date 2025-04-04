@@ -1,4 +1,3 @@
-
 import { Telegraf, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import express from 'express';
@@ -29,8 +28,8 @@ app.use(express.json());
 
 // Debug middleware to log all updates - place BEFORE command handlers
 bot.use((ctx, next) => {
-  console.log(`[${new Date().toISOString()}] Received update from ${ctx.from?.username || ctx.from?.id || 'unknown'}:`, 
-    ctx.updateType);
+  const user = ctx.from?.username || ctx.from?.id || 'unknown';
+  console.log(`[${new Date().toISOString()}] Received ${ctx.updateType} from ${user}`);
   return next();
 });
 
@@ -155,6 +154,18 @@ bot.hears('ping', (ctx) => {
   ctx.reply('pong');
 });
 
+// Add debug command
+bot.command('debug', async (ctx) => {
+  try {
+    const botInfo = await bot.telegram.getMe();
+    await ctx.reply(`Bot info: ${JSON.stringify(botInfo, null, 2)}`);
+    console.log('Debug info sent');
+  } catch (error) {
+    console.error('Error in debug command:', error);
+    await ctx.reply('Error fetching bot info');
+  }
+});
+
 // Handle text messages using MessageHandler
 bot.on(message('text'), async (ctx) => {
   try {
@@ -170,56 +181,51 @@ bot.on(message('text'), async (ctx) => {
   }
 });
 
-// Set up webhook or polling based on configuration
-if (config.useWebhook) {
-  // Webhook mode
-  const webhookPath = `/telegram-webhook/${config.webhookSecret}`;
-  
-  app.post(webhookPath, (req, res) => {
-    console.log('Received webhook request:', JSON.stringify(req.body, null, 2));
-    bot.handleUpdate(req.body);
-    res.status(200).json({ success: true });
-  });
-  
-  // Set webhook
-  const webhookUrl = `${config.webhookUrl}${webhookPath}`;
-  console.log(`Setting webhook URL to: ${webhookUrl}`);
-  
-  bot.telegram.setWebhook(webhookUrl)
-    .then(() => {
+// Function to start the bot
+const startBot = async () => {
+  if (config.useWebhook) {
+    // Webhook mode
+    const webhookPath = `/telegram-webhook/${config.webhookSecret}`;
+    
+    app.post(webhookPath, (req, res) => {
+      console.log('Received webhook request:', JSON.stringify(req.body, null, 2));
+      bot.handleUpdate(req.body);
+      res.status(200).json({ success: true });
+    });
+    
+    // Set webhook
+    const webhookUrl = `${config.webhookUrl}${webhookPath}`;
+    console.log(`Setting webhook URL to: ${webhookUrl}`);
+    
+    try {
+      await bot.telegram.setWebhook(webhookUrl);
       console.log('Webhook set successfully');
+      
       // Verify the webhook is set correctly
-      return bot.telegram.getWebhookInfo();
-    })
-    .then((info) => {
+      const info = await bot.telegram.getWebhookInfo();
       console.log('Webhook info:', info);
-    })
-    .catch((error) => {
+    } catch (error) {
       console.error('Failed to set webhook:', error);
-      console.log('Attempting to launch in polling mode as fallback...');
-      return bot.launch().catch(e => {
-        console.error('Failed to launch in polling mode:', e);
-        process.exit(1);
-      });
-    });
-} else {
-  // Polling mode (development)
-  console.log('Starting bot in polling mode...');
-  
-  // Make sure we're not using webhooks
-  bot.telegram.deleteWebhook()
-    .then(() => {
+      throw new Error('Failed to set webhook');
+    }
+  } else {
+    // Polling mode (development)
+    console.log('Starting bot in polling mode...');
+    
+    try {
+      // Make sure we're not using webhooks
+      await bot.telegram.deleteWebhook({ drop_pending_updates: true });
       console.log('Webhook deleted successfully');
-      return bot.launch();
-    })
-    .then(() => {
+      
+      // Launch the bot in polling mode
+      await bot.launch();
       console.log('Bot is running successfully in polling mode');
-    })
-    .catch((error) => {
+    } catch (error) {
       console.error('Failed to start bot in polling mode:', error);
-      process.exit(1);
-    });
-}
+      throw new Error('Failed to start bot in polling mode');
+    }
+  }
+};
 
 // Express server endpoints
 app.get('/health', (req, res) => {
@@ -236,4 +242,4 @@ app.listen(PORT, () => {
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
-export { bot, app };
+export { bot, app, startBot };
