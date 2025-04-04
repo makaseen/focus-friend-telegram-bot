@@ -1,15 +1,14 @@
-
 import { Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
 import express from 'express';
 import cors from 'cors';
 
-import { config, validateConfig } from './config';
-import { sessionManager } from './sessionManager';
-import { TelegramCalendarManager } from './telegramCalendarManager';
-import { MessageHandler } from './handlers/messageHandler';
-import { handleCalendarCommand, handleNextEventCommand, handleScheduleCommand } from './commands/calendarCommands';
-import { handleFocusCommand, handleBreakCommand, handleProcrastinationCommand } from './commands/focusCommands';
+import { config, validateConfig } from './config.js';
+import { sessionManager } from './sessionManager.js';
+import { TelegramCalendarManager } from './telegramCalendarManager.js';
+import { MessageHandler } from './handlers/messageHandler.js';
+import { handleCalendarCommand, handleNextEventCommand, handleScheduleCommand } from './commands/calendarCommands.js';
+import { handleFocusCommand, handleBreakCommand, handleProcrastinationCommand } from './commands/focusCommands.js';
 
 // Validate critical configuration
 if (!validateConfig()) {
@@ -328,4 +327,3 @@ const startBot = async () => {
 
 // Export bot and app for use in other modules
 export { bot, app, startBot, startServer };
-

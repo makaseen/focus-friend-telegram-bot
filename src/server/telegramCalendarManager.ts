@@ -1,7 +1,6 @@
-
 import { Context } from 'telegraf';
-import { googleCalendarApi } from '../utils/googleCalendar';
-import { CalendarEvent, TokenResponse } from '../utils/googleCalendar/types';
+import { googleCalendarApi } from '../utils/googleCalendar/index.js';
+import { CalendarEvent, TokenResponse } from '../utils/googleCalendar/types.js';
 
 interface UserCalendarToken extends TokenResponse {
   userId: number;

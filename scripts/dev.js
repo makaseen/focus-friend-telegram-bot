@@ -9,8 +9,16 @@ const __dirname = path.dirname(__filename);
 
 console.log('Starting server in development mode with nodemon...');
 
-// Run nodemon with ts-node for development
-const nodemon = spawn('npx', ['nodemon', '--watch', 'src/server', '--ext', 'ts', '--exec', 'ts-node', '--esm', 'src/server/start.ts'], {
+// Run nodemon with ts-node-esm for proper ESM support
+const nodemon = spawn('npx', [
+  'nodemon',
+  '--watch', 'src/server',
+  '--ext', 'ts',
+  '--exec', 'ts-node',
+  '--esm',
+  '--project', './tsconfig.server.json',
+  'src/server/start.ts'
+], {
   stdio: 'inherit',
   cwd: path.resolve(__dirname, '..')
 });
