@@ -14,7 +14,18 @@ const AuthCallback: React.FC = () => {
   useEffect(() => {
     const processAuth = async () => {
       try {
-        // Get the query parameters from the URL
+        // Check if this is the initial auth request or the callback
+        const isInitialAuth = location.pathname === '/auth/google';
+        
+        if (isInitialAuth) {
+          console.log('Initial auth request, redirecting to Google...');
+          // This is the initial request, redirect to Google OAuth
+          const state = location.search.substring(1); // Remove the ? from the search params
+          window.location.href = `https://accounts.google.com/o/oauth2/auth?client_id=${googleCalendarApi.getClientId()}&redirect_uri=${encodeURIComponent(`https://preview--focus-friend-telegram-bot.lovable.app/auth/callback`)}&scope=https://www.googleapis.com/auth/calendar&response_type=code&state=${state}&access_type=offline&prompt=consent`;
+          return;
+        }
+        
+        // Handle callback - This is the OAuth callback from Google
         const params = new URLSearchParams(location.search);
         const code = params.get('code');
         const error = params.get('error');
