@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Modal } from "@/components/ui/modal";
 import { useCalendar, CalendarConfigAlert } from "@/contexts/CalendarContext";
@@ -95,20 +94,28 @@ const HeroSection = () => {
         </div>
       </div>
 
+      {/* Bot Setup Modal */}
       <Modal
         isOpen={showBotModal}
         onClose={() => setShowBotModal(false)}
         title="Setup Telegram Bot"
       >
-        <p>To set up your Focus Friend bot on Telegram:</p>
-        <ol className="list-decimal pl-5 mt-2 space-y-2 mb-4">
-          <li>Open Telegram app on your device</li>
-          <li>Search for @FocusFriendBot in the search bar</li>
-          <li>Start a conversation with the bot by clicking "Start"</li>
-          <li>Follow the setup instructions provided by the bot</li>
-        </ol>
+        <div className="mb-6">
+          <p>To set up your Focus Friend bot on Telegram:</p>
+          <ol className="list-decimal pl-5 mt-2 space-y-2 mb-4">
+            <li>Open Telegram app on your device</li>
+            <li>Search for @FocusFriendBot in the search bar</li>
+            <li>Start a conversation with the bot by clicking "Start"</li>
+            <li>Follow the setup instructions provided by the bot</li>
+          </ol>
+          <p className="text-sm text-gray-500 italic">
+            Note: For this demo, the bot may not be active. In a real implementation, 
+            you would need to create and host your own Telegram bot.
+          </p>
+        </div>
       </Modal>
 
+      {/* Calendar Connection Modal */}
       <Modal
         isOpen={showCalendarModal}
         onClose={() => {

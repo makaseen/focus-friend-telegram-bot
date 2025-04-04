@@ -33,6 +33,8 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
         isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
       } transition-opacity duration-300`}
+      aria-modal="true"
+      role="dialog"
     >
       <div 
         className="absolute inset-0 bg-black/50" 
@@ -50,6 +52,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             size="icon" 
             onClick={onClose} 
             className="h-8 w-8 p-0"
+            aria-label="Close"
           >
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>

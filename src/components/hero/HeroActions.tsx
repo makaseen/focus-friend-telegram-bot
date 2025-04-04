@@ -24,6 +24,7 @@ const HeroActions = ({
         className="bg-focus hover:bg-focus-dark" 
         size="lg"
         onClick={onGetStarted}
+        aria-label="Get Started with Focus Friend"
       >
         <BotIcon className="mr-2 h-4 w-4" />
         Get Started
