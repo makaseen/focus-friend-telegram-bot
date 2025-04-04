@@ -59,6 +59,11 @@ const HeroSection = () => {
     setClientSecret('');
   };
 
+  // Create a wrapper function to maintain the Promise<void> return type
+  const handleRefreshEvents = async () => {
+    return refreshEvents();
+  };
+
   return (
     <section className="py-12 md:py-24 lg:py-32 overflow-hidden">
       <div className="container px-4 md:px-6">
@@ -70,7 +75,7 @@ const HeroSection = () => {
             calendarConnected={calendarConnected}
             isConnecting={isConnecting}
             events={events}
-            refreshEvents={refreshEvents}
+            refreshEvents={handleRefreshEvents}
           />
           
           <div className="flex items-center justify-center">

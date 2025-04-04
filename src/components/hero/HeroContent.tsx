@@ -11,7 +11,7 @@ interface HeroContentProps {
   calendarConnected: boolean;
   isConnecting: boolean;
   events: any[];
-  refreshEvents: () => void;
+  refreshEvents: () => Promise<void>;
 }
 
 const HeroContent = ({ 
