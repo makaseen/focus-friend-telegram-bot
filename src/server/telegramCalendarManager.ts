@@ -1,8 +1,9 @@
+
 import { Context } from 'telegraf';
 import { googleCalendarApi } from '../utils/googleCalendar/index.js';
 import { CalendarEvent, TokenResponse } from '../utils/googleCalendar/types.js';
 import { MAX_TIME_RANGE_MS } from '../utils/googleCalendar/constants.js';
-import { config } from './config';
+import { config } from './config.js';
 
 interface UserCalendarToken extends TokenResponse {
   userId: number;
@@ -53,14 +54,14 @@ export class TelegramCalendarManager {
       console.log(`Using production API base URL: ${baseUrl}`);
       
       // If apiBaseUrl is not set or invalid, use a default
-      if (!baseUrl || !baseUrl.startsWith('https://')) {
+      if (!baseUrl || !baseUrl.startsWith('http')) {
         baseUrl = 'https://focus-friend-telegram-bot.lovable.app';
         console.log(`API base URL not set or invalid, using default: ${baseUrl}`);
       }
     }
     
     // Ensure we have a properly formatted URL
-    if (!baseUrl.startsWith('https://')) {
+    if (!baseUrl.startsWith('https://') && !baseUrl.startsWith('http://')) {
       baseUrl = `https://${baseUrl}`;
       console.log(`Added https:// prefix to URL: ${baseUrl}`);
     }

@@ -1,8 +1,32 @@
 
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
 
-// Load environment variables
-dotenv.config();
+// Determine the directory name for the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Find the root directory (where the .env file should be)
+const rootDir = path.resolve(__dirname, '../../');
+const envPath = path.resolve(rootDir, '.env');
+
+// Check if .env file exists and log information
+console.log(`Looking for .env file at: ${envPath}`);
+if (fs.existsSync(envPath)) {
+  console.log('.env file found, loading environment variables');
+} else {
+  console.log('.env file not found, will rely on process.env values');
+}
+
+// Load environment variables with path to ensure we find the .env file
+const result = dotenv.config({ path: envPath });
+if (result.error) {
+  console.error('Error loading .env file:', result.error);
+} else {
+  console.log('Environment variables loaded successfully from dotenv');
+}
 
 export const config = {
   telegramToken: process.env.TELEGRAM_BOT_TOKEN || '',
@@ -14,6 +38,9 @@ export const config = {
   environment: process.env.NODE_ENV || 'development',
   // Default to polling mode unless explicitly set to use webhook
   useWebhook: process.env.USE_WEBHOOK === 'true',
+  // Google Calendar API credentials
+  googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
 };
 
 // Validate critical configuration
@@ -60,6 +87,17 @@ export const validateConfig = (): boolean => {
       console.error('ERROR: WEBHOOK_SECRET is missing in environment variables');
       isValid = false;
     }
+  }
+
+  // Validate Google Calendar API configuration
+  if (!config.googleClientId) {
+    console.error('WARNING: GOOGLE_CLIENT_ID is missing in environment variables');
+    console.error('Calendar functionality will not work correctly');
+  }
+
+  if (!config.googleClientSecret) {
+    console.error('WARNING: GOOGLE_CLIENT_SECRET is missing in environment variables');
+    console.error('Calendar functionality will not work correctly');
   }
   
   return isValid;
