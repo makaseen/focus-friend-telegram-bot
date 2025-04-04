@@ -44,6 +44,26 @@ export const getOAuthErrorMessage = (error: any): string => {
     return "An unknown authentication error occurred. Please check your console for details.";
   }
   
+  // Check for Google Calendar API specific errors
+  if (error.body) {
+    try {
+      // Try to parse the error body if it's a string
+      const errorBody = typeof error.body === 'string' ? JSON.parse(error.body) : error.body;
+      if (errorBody.error) {
+        if (errorBody.error.message) {
+          // Handle specific Google Calendar API errors
+          if (errorBody.error.code === 403) {
+            return "Access forbidden. Please verify that your Google Cloud project has the Calendar API enabled and that you've granted the necessary permissions. You may need to re-authorize the application.";
+          }
+          return errorBody.error.message;
+        }
+      }
+    } catch (e) {
+      // If parsing fails, fall back to other error handling
+      console.error('Error parsing API error body', e);
+    }
+  }
+  
   if (typeof error === 'string') {
     // New Google Identity errors
     if (error.includes('not_initialized') || error.includes('Missing required parameter')) {

@@ -74,6 +74,7 @@ class GoogleCalendarApi {
     
     return window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
+      // Important: Explicitly request Calendar scope with read-only access
       scope: SCOPES,
       callback: (tokenResponse: any) => {
         if (tokenResponse && tokenResponse.access_token) {
@@ -241,16 +242,38 @@ class GoogleCalendarApi {
         access_token: this.token.access_token
       });
       
-      const response = await window.gapi.client.calendar.events.list({
-        'calendarId': PRIMARY_CALENDAR_ID,
-        'timeMin': new Date().toISOString(),
-        'showDeleted': false,
-        'singleEvents': true,
-        'maxResults': maxResults,
-        'orderBy': 'startTime'
-      });
-
-      return response.result.items || [];
+      // Enable better error handling for the Calendar API request
+      try {
+        const response = await window.gapi.client.calendar.events.list({
+          'calendarId': PRIMARY_CALENDAR_ID,
+          'timeMin': new Date().toISOString(),
+          'showDeleted': false,
+          'singleEvents': true,
+          'maxResults': maxResults,
+          'orderBy': 'startTime'
+        });
+        
+        return response.result.items || [];
+      } catch (apiError: any) {
+        // Check if this is a scope or permission issue
+        if (apiError && apiError.status === 403) {
+          console.error("Permission denied. This may be due to insufficient calendar scopes.");
+          
+          // Specific error for scope issues
+          toast({
+            title: "Calendar Access Denied",
+            description: "Please ensure you've granted permission to read your calendar data and that the Google Cloud project has Calendar API enabled.",
+            variant: "destructive"
+          });
+          
+          // Try to sign out and clear token to force re-authentication
+          this.signOut();
+        } else {
+          // Forward other errors to the general error handler
+          throw apiError;
+        }
+        return [];
+      }
     } catch (error) {
       console.error('Error fetching calendar events:', error);
       handleApiError(error, "Failed to Load Events");

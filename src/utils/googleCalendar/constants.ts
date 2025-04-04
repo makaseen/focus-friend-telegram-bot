@@ -1,6 +1,7 @@
 
 // Google Calendar API scopes needed for our application
-export const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+// Explicitly requesting read-only access to Calendar
+export const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly';
 
 // Default calendar ID for primary calendar
 export const PRIMARY_CALENDAR_ID = 'primary';

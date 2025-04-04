@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Modal } from "@/components/ui/modal";
 import { useCalendar, CalendarConfigAlert } from "@/contexts/CalendarContext";
@@ -141,6 +142,8 @@ const HeroSection = () => {
               <li>Enable the Google Calendar API for your project</li>
               <li>Create OAuth 2.0 credentials (OAuth client ID)</li>
               <li>Add authorized JavaScript origins for your domain</li>
+              <li><strong>Important:</strong> Make sure to enable the Google Calendar API in your Google Cloud project's API Library</li>
+              <li>During OAuth consent screen setup, request scopes for calendar.readonly and calendar.events.readonly</li>
               <li>Copy your Client ID and set it below</li>
             </ol>
             
@@ -197,10 +200,11 @@ const HeroSection = () => {
           <>
             <p>To connect your Google Calendar:</p>
             <ol className="list-decimal pl-5 mt-2 space-y-2 mb-4">
-              <li>We'll need access to your Google Calendar</li>
+              <li>We'll need <strong>read-only</strong> access to your Google Calendar</li>
               <li>Your events will sync with Focus Friend</li>
               <li>You'll receive timely reminders and schedule assistance</li>
               <li>Your data is kept private and secure</li>
+              <li>If you receive a permission error, ensure Calendar API is enabled in your Google Cloud project</li>
             </ol>
             <Button 
               className="w-full mt-4 bg-focus hover:bg-focus-dark"
