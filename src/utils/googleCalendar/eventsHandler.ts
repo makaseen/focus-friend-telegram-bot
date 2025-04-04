@@ -1,8 +1,7 @@
-
 import { loadGoogleApi } from './apiLoader';
 import { tokenManager } from './tokenManager';
 import { handleApiError } from './utils';
-import { PRIMARY_CALENDAR_ID, MAX_TIME_RANGE_MS } from './constants';
+import { PRIMARY_CALENDAR_ID, MAX_TIME_RANGE_MS, MAX_RETRY_ATTEMPTS, RETRY_DELAY_MS } from './constants';
 import { CalendarEventListParams, CalendarEvent } from './types';
 
 /**
@@ -10,7 +9,7 @@ import { CalendarEventListParams, CalendarEvent } from './types';
  */
 export class EventsHandler {
   /**
-   * Fetch upcoming events from calendar
+   * Fetch upcoming events from calendar with retry logic
    */
   async getUpcomingEvents(maxResults = 10): Promise<CalendarEvent[]> {
     console.log("Getting upcoming events, token status:", !!tokenManager.token?.access_token);
@@ -29,14 +28,16 @@ export class EventsHandler {
       // Calculate time range - current time to 1 month from now
       const timeRange = this.getTimeRange();
       
-      return await this.fetchEvents(timeRange, maxResults);
+      // Try fetching with retries
+      return await this.fetchEventsWithRetry(timeRange, maxResults);
     } catch (error) {
       console.error('Error fetching calendar events:', error);
       
       // Check for authentication errors and clear token if needed
       if (error instanceof Error && (
           error.message.includes('Not authenticated') || 
-          error.message.includes('Invalid Credentials')
+          error.message.includes('Invalid Credentials') ||
+          error.message.includes('access denied')
         )) {
         console.log("Authentication error detected, clearing token");
         tokenManager.clearToken();
@@ -73,6 +74,67 @@ export class EventsHandler {
   }
   
   /**
+   * Fetch events with retry logic
+   */
+  private async fetchEventsWithRetry(
+    timeRange: { now: Date; oneMonthFromNow: Date },
+    maxResults: number,
+    retryCount = 0
+  ): Promise<CalendarEvent[]> {
+    try {
+      return await this.fetchEvents(timeRange, maxResults);
+    } catch (error) {
+      // If we haven't exceeded retry attempts and it's a 403/401 error, retry
+      if (retryCount < MAX_RETRY_ATTEMPTS && this.shouldRetry(error)) {
+        console.log(`Retrying calendar fetch (${retryCount + 1}/${MAX_RETRY_ATTEMPTS})...`);
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+        
+        // Check if we need to refresh the token first
+        await this.refreshTokenIfNeeded();
+        
+        // Recursive retry with incremented counter
+        return this.fetchEventsWithRetry(timeRange, maxResults, retryCount + 1);
+      }
+      
+      // Otherwise rethrow
+      throw error;
+    }
+  }
+  
+  /**
+   * Determine if we should retry the request
+   */
+  private shouldRetry(error: any): boolean {
+    // Retry on 403 (permission) or 401 (auth) errors
+    if (error && (error.status === 403 || error.status === 401)) {
+      return true;
+    }
+    
+    // Also check error message patterns
+    if (error instanceof Error && (
+      error.message.includes('access denied') ||
+      error.message.includes('permission') ||
+      error.message.includes('auth') ||
+      error.message.includes('credentials')
+    )) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Refresh token if needed
+   */
+  private async refreshTokenIfNeeded(): Promise<void> {
+    // In a real implementation, we would refresh the token here
+    // For now, just make sure we have the latest token from storage
+    tokenManager.loadTokenFromStorage();
+  }
+  
+  /**
    * Fetch events from the Calendar API
    */
   private async fetchEvents(
@@ -80,6 +142,11 @@ export class EventsHandler {
     maxResults: number
   ): Promise<CalendarEvent[]> {
     try {
+      // Validate the Google API client is loaded
+      if (!window.gapi || !window.gapi.client || !window.gapi.client.calendar) {
+        throw new Error('Google Calendar API not properly loaded');
+      }
+      
       const params: CalendarEventListParams = {
         'calendarId': PRIMARY_CALENDAR_ID,
         'timeMin': timeRange.now.toISOString(),
@@ -90,10 +157,22 @@ export class EventsHandler {
         'orderBy': 'startTime'
       };
       
+      console.log("Fetching calendar events with params:", { 
+        calendarId: params.calendarId,
+        timeRange: `${params.timeMin} to ${params.timeMax}`
+      });
+      
       const response = await window.gapi.client.calendar.events.list(params);
+      
+      console.log("Calendar API response received:", { 
+        status: response.status, 
+        resultLength: response.result.items?.length || 0 
+      });
       
       return response.result.items || [];
     } catch (apiError: any) {
+      console.error("Google Calendar API error details:", apiError);
+      
       // Check if this is a scope or permission issue
       if (apiError && apiError.status === 403) {
         console.error("Permission denied. This may be due to insufficient calendar scopes.");

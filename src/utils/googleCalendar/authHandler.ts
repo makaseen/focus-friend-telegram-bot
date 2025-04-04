@@ -67,6 +67,7 @@ export class AuthHandler {
       scope: SCOPES,
       callback: (tokenResponse: any) => {
         if (tokenResponse && tokenResponse.access_token) {
+          console.log("Token received with scopes:", tokenResponse.scope);
           tokenManager.handleTokenResponse(tokenResponse);
           toast({
             title: "Calendar Connected",
@@ -111,10 +112,8 @@ export class AuthHandler {
         return false;
       }
       
-      // Initialize token client if not already done
-      if (!this.tokenClient) {
-        this.tokenClient = this.initializeTokenClient();
-      }
+      // Always reset the token client to ensure we're using fresh settings
+      this.tokenClient = this.initializeTokenClient();
       
       if (!this.tokenClient) {
         const errorMsg = "Failed to initialize Google token client";
@@ -127,10 +126,11 @@ export class AuthHandler {
         return false;
       }
       
-      // Request token
+      // Request token with consent prompt to ensure user sees permission dialog
       console.log("Requesting token from Google Identity Services");
       this.tokenClient.requestAccessToken({
-        prompt: 'consent'
+        prompt: 'consent',  // Always show consent screen to ensure proper scopes
+        include_granted_scopes: true  // Include previously granted scopes
       });
       
       // Note: Success/failure will be handled by the callback functions
