@@ -3,6 +3,7 @@ import { createContext, useState, useEffect, ReactNode } from 'react';
 import { googleCalendarApi } from '@/utils/googleCalendar';
 import { getSavedConnectionStatus } from './utils';
 import { CalendarContextType } from './types';
+import { toast } from '@/hooks/use-toast';
 
 export const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
 
@@ -21,14 +22,37 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
   // Check if calendar API is configured
   const isConfigured = googleCalendarApi.isConfigured();
 
+  // Check connection status on mount and when URL changes (for auth callback)
   useEffect(() => {
-    // Check if we have previously connected status
-    const connected = getSavedConnectionStatus();
-    setCalendarConnected(connected);
+    const checkConnectionStatus = () => {
+      try {
+        // Check if we have previously connected status
+        const connected = getSavedConnectionStatus();
+        console.log("Calendar connection status check:", connected);
+        setCalendarConnected(connected);
+        
+        // If connected, try to load events
+        if (connected) {
+          refreshEvents();
+        }
+      } catch (err) {
+        console.error("Error checking connection status:", err);
+      }
+    };
+    
+    // Check on mount
+    checkConnectionStatus();
     
     // Load client ID from storage if available
     const savedClientId = localStorage.getItem('googleCalendarClientId') || '';
     setClientId(savedClientId);
+    
+    // Also check when URL changes (could be returning from auth)
+    window.addEventListener('popstate', checkConnectionStatus);
+    
+    return () => {
+      window.removeEventListener('popstate', checkConnectionStatus);
+    };
   }, []);
 
   // Connect to Google Calendar
@@ -88,8 +112,10 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
 
   // Fetch calendar events
   const refreshEvents = async (): Promise<void> => {
-    if (!calendarConnected) {
-      setError('Calendar is not connected.');
+    // Check if authenticated before proceeding
+    if (!googleCalendarApi.isAuthenticated()) {
+      console.warn('Attempted to fetch events but calendar is not connected.');
+      setCalendarConnected(false);
       return;
     }
     
@@ -97,11 +123,24 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     setError(null);
     
     try {
+      console.log("Fetching calendar events...");
       const calendarEvents = await googleCalendarApi.getUpcomingEvents(10);
+      console.log("Received events:", calendarEvents.length);
       setEvents(calendarEvents);
+      
+      // If we successfully got events, ensure connection state is true
+      setCalendarConnected(true);
     } catch (err) {
       console.error('Error fetching events:', err);
-      setError('Failed to fetch calendar events.');
+      toast({
+        title: "Calendar Error",
+        description: "Failed to fetch calendar events. Please reconnect your calendar.",
+        variant: "destructive"
+      });
+      // If we get auth errors, reset the connection state
+      if (err instanceof Error && err.message.includes('Not authenticated')) {
+        setCalendarConnected(false);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -11,21 +11,30 @@ class GoogleCalendarApi {
   
   constructor() {
     // Attempt to load token from localStorage
-    const savedToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
-    if (savedToken) {
-      try {
+    this.loadTokenFromStorage();
+  }
+  
+  // Extract token loading into a separate method so we can call it when needed
+  loadTokenFromStorage(): boolean {
+    try {
+      const savedToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
+      if (savedToken) {
         const parsedToken = JSON.parse(savedToken) as TokenResponse;
         // Check if token is expired
         if (parsedToken.expiry_date && parsedToken.expiry_date > Date.now()) {
           this.token = parsedToken;
+          console.log("Loaded valid token from storage");
+          return true;
         } else {
+          console.log("Found expired token in storage, removing");
           localStorage.removeItem(STORAGE_KEYS.TOKEN);
         }
-      } catch (error) {
-        console.error('Failed to parse saved token', error);
-        localStorage.removeItem(STORAGE_KEYS.TOKEN);
       }
+    } catch (error) {
+      console.error('Failed to parse saved token', error);
+      localStorage.removeItem(STORAGE_KEYS.TOKEN);
     }
+    return false;
   }
 
   // Check if client ID is set
@@ -92,6 +101,8 @@ class GoogleCalendarApi {
   private handleTokenResponse(response: any) {
     if (!response || !response.access_token) return;
     
+    console.log("Processing token response:", { access_token: response.access_token?.substring(0, 5) + '...', expires_in: response.expires_in });
+    
     this.token = {
       access_token: response.access_token,
       expires_in: response.expires_in,
@@ -100,9 +111,10 @@ class GoogleCalendarApi {
       expiry_date: Date.now() + (response.expires_in * 1000)
     };
     
+    // Store token in localStorage
     localStorage.setItem(STORAGE_KEYS.TOKEN, JSON.stringify(this.token));
     
-    console.log("Successfully authenticated with Google");
+    console.log("Token successfully saved to localStorage");
     toast({
       title: "Calendar Connected",
       description: "Your Google Calendar has been successfully connected."
@@ -176,12 +188,8 @@ class GoogleCalendarApi {
     try {
       console.log("Handling authorization code");
       
-      // In a complete implementation, you would exchange this code for a token
-      // using your server-side implementation
-      
-      // For this demo, we'll simulate a successful token response
-      // In a real app, you would make an API call to exchange the code
-      
+      // In a real app, you would exchange the code for a token
+      // For this demo implementation, we'll create a simulated token
       const mockTokenResponse = {
         access_token: "mock_access_token_" + Date.now(),
         expires_in: 3600,
@@ -224,12 +232,23 @@ class GoogleCalendarApi {
 
   // Check if user is currently authenticated
   isAuthenticated(): boolean {
-    return !!this.token;
+    // Refresh token from storage to ensure we have the latest state
+    if (!this.token) {
+      this.loadTokenFromStorage();
+    }
+    
+    const isAuth = !!this.token && !!this.token.access_token;
+    console.log("Authentication check:", isAuth);
+    return isAuth;
   }
 
   // Fetch upcoming events from calendar
   async getUpcomingEvents(maxResults = 10): Promise<any[]> {
-    if (!this.token) {
+    console.log("Getting upcoming events, token status:", !!this.token);
+    
+    // Try to load token again if not present
+    if (!this.token && !this.loadTokenFromStorage()) {
+      console.error('Not authenticated with Google Calendar');
       throw new Error('Not authenticated with Google Calendar');
     }
 
@@ -239,7 +258,7 @@ class GoogleCalendarApi {
       // Set the authorization header with the access token
       window.gapi.client.setApiKey('');
       window.gapi.client.setToken({
-        access_token: this.token.access_token
+        access_token: this.token!.access_token
       });
       
       // Enable better error handling for the Calendar API request
@@ -266,8 +285,9 @@ class GoogleCalendarApi {
             variant: "destructive"
           });
           
-          // Try to sign out and clear token to force re-authentication
-          this.signOut();
+          // Clear token to force re-authentication
+          this.token = null;
+          localStorage.removeItem(STORAGE_KEYS.TOKEN);
         } else {
           // Forward other errors to the general error handler
           throw apiError;

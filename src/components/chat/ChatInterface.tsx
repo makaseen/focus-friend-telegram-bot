@@ -4,6 +4,7 @@ import { BotMessage, UserMessage } from './ChatBubble';
 import { BrainIcon, SendIcon } from './ChatIcons';
 import { useCalendar } from "@/contexts/CalendarContext";
 import { formatDistance } from 'date-fns';
+import { toast } from "@/hooks/use-toast";
 
 type Message = {
   text: string;
@@ -25,8 +26,23 @@ const ChatInterface = () => {
 
   // Refresh calendar events when component mounts
   useEffect(() => {
+    // Only attempt to refresh events if calendar is actually connected
     if (calendarConnected) {
-      refreshEvents();
+      console.log("Chat interface: Calendar connected, refreshing events");
+      try {
+        refreshEvents();
+      } catch (err) {
+        console.error("Error refreshing events in chat interface:", err);
+        if (err instanceof Error) {
+          toast({
+            title: "Calendar Error",
+            description: err.message,
+            variant: "destructive"
+          });
+        }
+      }
+    } else {
+      console.log("Chat interface: Calendar not connected, skipping event refresh");
     }
   }, [calendarConnected, refreshEvents]);
 

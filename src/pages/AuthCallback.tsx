@@ -59,7 +59,11 @@ const AuthCallback: React.FC = () => {
         const error = params.get('error');
         const state = params.get('state');
         
-        console.log('Auth callback parameters:', { code: code?.substring(0, 5) + '...', error, state });
+        console.log('Auth callback parameters:', { 
+          code: code ? code.substring(0, 5) + '...' : null, 
+          error, 
+          state 
+        });
         
         // Handle error case
         if (error) {
@@ -90,7 +94,10 @@ const AuthCallback: React.FC = () => {
               if (isTelegramAuth) {
                 setMessage('Calendar connected successfully. You can now close this window and return to Telegram.');
               } else {
-                setMessage('Calendar connected successfully. You can now close this window or return to the app.');
+                setMessage('Calendar connected successfully. Redirecting you back to the app...');
+                
+                // Reload Google Calendar token from storage to ensure it's available
+                googleCalendarApi.loadTokenFromStorage();
                 
                 // Redirect back to home page after successful authentication
                 setTimeout(() => {
@@ -122,7 +129,7 @@ const AuthCallback: React.FC = () => {
               variant: "destructive"
             });
           }
-        } else {
+        } else if (!isInitialAuth) {
           setStatus('error');
           setMessage('No authorization code received. Please try connecting again.');
           toast({
