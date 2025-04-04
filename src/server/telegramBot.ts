@@ -231,6 +231,37 @@ app.get('/env-check', (req, res) => {
   res.status(200).json(envInfo);
 });
 
+// Add Google OAuth routes
+app.get('/auth/google', (req, res) => {
+  console.log('Received request to /auth/google endpoint');
+  
+  // Extract the state from query parameters
+  const state = req.query.state as string;
+  
+  if (!state) {
+    console.error('No state provided to /auth/google endpoint');
+    return res.status(400).send('Error: No state parameter provided');
+  }
+  
+  // Construct SPA URL for handling auth
+  const redirectUrl = `/auth/google/${encodeURIComponent(state)}`;
+  
+  console.log(`Redirecting to SPA auth handler: ${redirectUrl}`);
+  res.redirect(redirectUrl);
+});
+
+// OAuth callback endpoint
+app.get('/auth/callback', (req, res) => {
+  console.log('Received request to /auth/callback endpoint');
+  
+  // Just redirect to the SPA to handle the callback
+  const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+  const redirectUrl = `/auth/callback?${queryString}`;
+  
+  console.log(`Redirecting to SPA callback handler: ${redirectUrl}`);
+  res.redirect(redirectUrl);
+});
+
 // Root endpoint to verify server is running
 app.get('/', (req, res) => {
   res.status(200).send('Focus Friend Bot Server is running. Visit /health or /env-check for more information.');
