@@ -1,10 +1,8 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { googleCalendarApi } from "@/utils/googleCalendar";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { CalendarIcon } from "lucide-react";
-// Remove BrowserRouter import if it exists
 
 interface CalendarContextType {
   calendarConnected: boolean;
@@ -27,7 +25,6 @@ const getSavedConnectionStatus = (): boolean => {
 };
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
-  
   const [calendarConnected, setCalendarConnected] = useState(getSavedConnectionStatus());
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConfigured, setIsConfigured] = useState(googleCalendarApi.isConfigured());
@@ -175,14 +172,14 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Changed to a named function declaration for better Fast Refresh compatibility
-export function useCalendar() {
+// Export the useCalendar hook directly
+export const useCalendar = () => {
   const context = useContext(CalendarContext);
   if (context === undefined) {
     throw new Error('useCalendar must be used within a CalendarProvider');
   }
   return context;
-}
+};
 
 export function CalendarConfigAlert() {
   const { isConfigured, updateClientId, updateClientSecret } = useCalendar();
