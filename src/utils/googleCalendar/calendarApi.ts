@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 
 class GoogleCalendarApi {
   token: TokenResponse | null = null;
+  tokenClient: any = null;
   
   constructor() {
     // Attempt to load token from localStorage
@@ -63,6 +64,50 @@ class GoogleCalendarApi {
     }
   }
 
+  // Initialize the Google Identity token client
+  private initializeTokenClient() {
+    if (!window.google || !this.isConfigured()) return null;
+    
+    const { clientId } = getClientCredentials();
+    
+    console.log("Initializing Google Identity token client");
+    
+    return window.google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: SCOPES,
+      callback: (tokenResponse: any) => {
+        if (tokenResponse && tokenResponse.access_token) {
+          this.handleTokenResponse(tokenResponse);
+        }
+      },
+      error_callback: (error: any) => {
+        console.error("Token client error:", error);
+        handleApiError(error, "Authentication Failed");
+      }
+    });
+  }
+  
+  // Handle successful token response
+  private handleTokenResponse(response: any) {
+    if (!response || !response.access_token) return;
+    
+    this.token = {
+      access_token: response.access_token,
+      expires_in: response.expires_in,
+      token_type: 'Bearer',
+      scope: response.scope,
+      expiry_date: Date.now() + (response.expires_in * 1000)
+    };
+    
+    localStorage.setItem(STORAGE_KEYS.TOKEN, JSON.stringify(this.token));
+    
+    console.log("Successfully authenticated with Google");
+    toast({
+      title: "Calendar Connected",
+      description: "Your Google Calendar has been successfully connected."
+    });
+  }
+
   // Handle the Google Sign In process
   async signIn(): Promise<boolean> {
     try {
@@ -76,49 +121,46 @@ class GoogleCalendarApi {
         return false;
       }
       
-      console.log("Attempting to load Google API");
+      console.log("Loading Google API");
       await loadGoogleApi();
       
-      console.log("Getting auth instance");
-      const googleAuth = window.gapi.auth2.getAuthInstance();
-      
-      // Check if already signed in
-      if (googleAuth.isSignedIn.get()) {
-        console.log("User is already signed in");
-        const currentUser = googleAuth.currentUser.get();
-        const authResponse = currentUser.getAuthResponse();
-        
-        this.token = {
-          access_token: authResponse.access_token,
-          expires_in: authResponse.expires_in,
-          token_type: 'Bearer',
-          scope: SCOPES,
-          expiry_date: Date.now() + (authResponse.expires_in * 1000)
-        };
-        
-        localStorage.setItem(STORAGE_KEYS.TOKEN, JSON.stringify(this.token));
-        return true;
+      // Ensure Google Identity Services is loaded
+      if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+        const errorMsg = "Google Identity Services not loaded. Please refresh the page and try again.";
+        toast({
+          title: "Error",
+          description: errorMsg,
+          variant: "destructive"
+        });
+        console.error(errorMsg);
+        return false;
       }
       
-      console.log("Signing in with Google");
-      const user = await googleAuth.signIn({
-        prompt: 'consent' // Always show the consent screen
+      // Initialize token client if not already done
+      if (!this.tokenClient) {
+        this.tokenClient = this.initializeTokenClient();
+      }
+      
+      if (!this.tokenClient) {
+        const errorMsg = "Failed to initialize Google token client";
+        console.error(errorMsg);
+        toast({
+          title: "Error",
+          description: errorMsg,
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      // Request token
+      console.log("Requesting token from Google Identity Services");
+      this.tokenClient.requestAccessToken({
+        prompt: 'consent'
       });
       
-      const authResponse = user.getAuthResponse();
-      
-      console.log("Successfully authenticated with Google");
-      
-      this.token = {
-        access_token: authResponse.access_token,
-        expires_in: authResponse.expires_in,
-        token_type: 'Bearer',
-        scope: SCOPES,
-        expiry_date: Date.now() + (authResponse.expires_in * 1000)
-      };
-
-      // Save token to localStorage
-      localStorage.setItem(STORAGE_KEYS.TOKEN, JSON.stringify(this.token));
+      // Note: This is actually an async process. The success/failure will be handled 
+      // by the callback functions in initializeTokenClient.
+      // For now, we'll return true if we got this far without errors
       
       return true;
     } catch (error) {
@@ -131,9 +173,13 @@ class GoogleCalendarApi {
   // Sign out from Google
   async signOut(): Promise<boolean> {
     try {
-      if (window.gapi && window.gapi.auth2) {
-        const googleAuth = window.gapi.auth2.getAuthInstance();
-        await googleAuth.signOut();
+      if (window.google && window.google.accounts) {
+        // Revoke token if we have one
+        if (this.token && this.token.access_token) {
+          window.google.accounts.oauth2.revoke(this.token.access_token, () => {
+            console.log("Token revoked");
+          });
+        }
       }
       
       // Clear stored token
@@ -161,7 +207,11 @@ class GoogleCalendarApi {
     try {
       await loadGoogleApi();
       
-      await window.gapi.client.load('calendar', 'v3');
+      // Set the authorization header with the access token
+      window.gapi.client.setApiKey('');
+      window.gapi.client.setToken({
+        access_token: this.token.access_token
+      });
       
       const response = await window.gapi.client.calendar.events.list({
         'calendarId': PRIMARY_CALENDAR_ID,

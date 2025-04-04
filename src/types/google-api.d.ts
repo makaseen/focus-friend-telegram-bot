@@ -7,15 +7,32 @@ interface Window {
     GOOGLE_CLIENT_SECRET?: string;
     [key: string]: any;
   };
+  google?: {
+    accounts: {
+      oauth2: {
+        initTokenClient: (config: {
+          client_id: string;
+          scope: string;
+          callback: (response: any) => void;
+          error_callback?: (error: any) => void;
+        }) => {
+          requestAccessToken: (options?: { prompt?: 'none' | 'consent' | 'select_account' }) => void;
+        };
+        revoke: (token: string, callback?: () => void) => void;
+      };
+    };
+  };
   gapi: {
     load: (api: string, callback: () => void) => void;
     client: {
-      init: (params: {
-        clientId: string;
+      init: (params?: {
+        clientId?: string;
         apiKey?: string;
-        scope: string;
+        scope?: string;
         plugin_name?: string;
       }) => Promise<void>;
+      setToken: (token: { access_token: string }) => void;
+      setApiKey: (apiKey: string) => void;
       load: (api: string, version: string) => Promise<void>;
       calendar: {
         events: {
@@ -37,7 +54,7 @@ interface Window {
         }
       }
     };
-    auth2: {
+    auth2?: {
       getAuthInstance: () => {
         isSignedIn: { 
           get: () => boolean;

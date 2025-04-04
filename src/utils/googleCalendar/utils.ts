@@ -45,8 +45,15 @@ export const getOAuthErrorMessage = (error: any): string => {
   }
   
   if (typeof error === 'string') {
-    if (error.includes('idpframe_initialization_failed')) {
-      return "OAuth initialization failed. Please ensure your Google OAuth Client ID is correct and the app is properly configured in the Google Cloud Console.";
+    // New Google Identity errors
+    if (error.includes('not_initialized') || error.includes('Missing required parameter')) {
+      return "Google OAuth initialization failed. Please ensure your Google OAuth Client ID is correct.";
+    }
+    if (error.includes('popup_closed_by_user')) {
+      return "You closed the authentication popup. Please try again.";
+    }
+    if (error.includes('popup_blocked')) {
+      return "Authentication popup was blocked. Please allow popups for this site and try again.";
     }
     return error;
   }
@@ -59,13 +66,22 @@ export const getOAuthErrorMessage = (error: any): string => {
     return "You denied access to your Google Calendar.";
   }
   
+  // Handle errors from Google Identity Services
+  if (error?.type === 'popup_closed_by_user') {
+    return "You closed the authentication popup. Please try again.";
+  }
+  
+  if (error?.type === 'popup_blocked_by_browser') {
+    return "Authentication popup was blocked by your browser. Please allow popups for this site and try again.";
+  }
+  
   if (error?.details) {
     if (typeof error.details === 'string') {
       if (error.details.includes('invalid_client')) {
         return "Invalid OAuth client ID. Please check your Google Cloud Console configuration and ensure your domain is authorized.";
       }
-      if (error.details.includes('idpframe_initialization_failed')) {
-        return "Google OAuth initialization failed. Please verify your Google Cloud Console settings and make sure your OAuth credentials are correctly configured.";
+      if (error.details.includes('disallowed_useragent')) {
+        return "Google doesn't allow OAuth popups on this browser or device. Please try on a different browser.";
       }
       return error.details;
     }
