@@ -45,7 +45,7 @@ interface Window {
             orderBy: string;
           }) => Promise<{
             result: {
-              items: any[];
+              items: GoogleCalendarEvent[];
             }
           }>;
           insert: (params: any) => Promise<any>;
@@ -87,4 +87,39 @@ interface Window {
       }
     }
   }
+}
+
+interface GoogleCalendarEvent {
+  id: string;
+  summary: string;
+  description?: string;
+  location?: string;
+  start: {
+    dateTime?: string;
+    date?: string;
+    timeZone?: string;
+  };
+  end: {
+    dateTime?: string;
+    date?: string;
+    timeZone?: string;
+  };
+  status: string;
+  htmlLink: string;
+  created: string;
+  updated: string;
+  creator: {
+    email: string;
+    displayName?: string;
+  };
+  organizer: {
+    email: string;
+    displayName?: string;
+  };
+  attendees?: Array<{
+    email: string;
+    displayName?: string;
+    responseStatus?: 'needsAction' | 'declined' | 'tentative' | 'accepted';
+  }>;
+  [key: string]: any;
 }
