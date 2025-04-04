@@ -1,3 +1,4 @@
+
 import { startBot, startServer } from './telegramBot.js';
 import { config } from './config.js';
 
@@ -9,7 +10,8 @@ console.log(`🔑 Bot Token: ${config.telegramToken ? (config.telegramToken.slic
 console.log(`🔌 Port: ${config.port}`);
 console.log('---------------------------------------');
 
-const isMainModule = require.main === module;
+// Use import.meta.url to check if this is the main module in ESM
+const isMainModule = import.meta.url.endsWith(process.argv[1]);
 
 if (isMainModule) {
   console.log('✅ Starting Telegram bot server...');
