@@ -181,6 +181,63 @@ bot.on(message('text'), async (ctx) => {
   }
 });
 
+// Add notification endpoint to update user's calendar connection status
+app.post('/notify-calendar-connected', express.json(), async (req, res) => {
+  try {
+    const { userId, connected } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'Missing userId parameter' });
+    }
+    
+    console.log(`Received notification that user ${userId} has ${connected ? 'connected' : 'disconnected'} their calendar`);
+    
+    // Update the user's session
+    const numericUserId = parseInt(userId, 10);
+    if (isNaN(numericUserId)) {
+      return res.status(400).json({ success: false, error: 'Invalid userId format' });
+    }
+    
+    // Update the user's session with calendar connection status
+    const userSession = sessionManager.getSession(numericUserId);
+    if (userSession) {
+      sessionManager.updateSession(numericUserId, { 
+        calendarConnected: connected === true,
+        state: connected === true ? 'calendar_connected' : userSession.state
+      });
+      
+      // Send a message to the user confirming the connection
+      if (connected) {
+        await bot.telegram.sendMessage(numericUserId, 
+          "🎉 Great news! Your Google Calendar has been successfully connected. Now I can help you manage your schedule more effectively.\n\n" +
+          "Try these commands:\n" +
+          "/schedule - See your upcoming events\n" +
+          "/next - Check your next event"
+        );
+      }
+      
+      res.status(200).json({ success: true, message: `User ${userId} calendar connection status updated to ${connected}` });
+    } else {
+      // Create a new session if one doesn't exist
+      sessionManager.createSession(numericUserId, { calendarConnected: connected === true });
+      
+      if (connected) {
+        await bot.telegram.sendMessage(numericUserId, 
+          "🎉 Great news! Your Google Calendar has been successfully connected. Now I can help you manage your schedule more effectively.\n\n" +
+          "Try these commands:\n" +
+          "/schedule - See your upcoming events\n" +
+          "/next - Check your next event"
+        );
+      }
+      
+      res.status(200).json({ success: true, message: `New session created for user ${userId} with calendar connected: ${connected}` });
+    }
+  } catch (error) {
+    console.error('Error handling calendar connection notification:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // Express server endpoints
 
 // Health check endpoint with more detailed info

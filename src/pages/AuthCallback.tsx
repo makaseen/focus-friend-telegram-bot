@@ -12,6 +12,7 @@ import { config } from '@/server/config';
 const AuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState('Processing authentication response...');
+  const [telegramUserId, setTelegramUserId] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const routeParams = useParams<{ state?: string }>();
@@ -52,6 +53,16 @@ const AuthCallback: React.FC = () => {
         }
         
         console.log('Using state:', state);
+        
+        // Extract Telegram user ID from state if present
+        if (state && state.includes('telegram-')) {
+          const telegramIdMatch = state.match(/telegram-(\d+)/);
+          if (telegramIdMatch && telegramIdMatch[1]) {
+            const extractedUserId = telegramIdMatch[1];
+            console.log('Extracted Telegram user ID:', extractedUserId);
+            setTelegramUserId(extractedUserId);
+          }
+        }
         
         if (isInitialAuth) {
           console.log('Initial auth request, redirecting to Google...');
@@ -127,8 +138,11 @@ const AuthCallback: React.FC = () => {
               setStatus('success');
               const isTelegramAuth = state?.includes('telegram-');
               
-              if (isTelegramAuth) {
+              if (isTelegramAuth && telegramUserId) {
                 setMessage('Calendar connected successfully. You can now close this window and return to Telegram.');
+                
+                // Notify the bot that the user has connected their calendar
+                await notifyTelegramBot(telegramUserId);
               } else {
                 setMessage('Calendar connected successfully. Redirecting you back to the app...');
                 
@@ -186,6 +200,36 @@ const AuthCallback: React.FC = () => {
     processAuth();
   }, [location, navigate, routeParams]);
 
+  // Function to notify the Telegram bot about successful calendar connection
+  const notifyTelegramBot = async (userId: string) => {
+    try {
+      const apiBaseUrl = config.apiBaseUrl || config.stagingUrl;
+      const url = `${apiBaseUrl}/notify-calendar-connected?userId=${userId}`;
+      
+      console.log('Notifying Telegram bot about calendar connection:', url);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          connected: true
+        })
+      });
+      
+      const data = await response.json();
+      console.log('Notification response:', data);
+      
+      if (!response.ok) {
+        console.error('Failed to notify Telegram bot:', data);
+      }
+    } catch (error) {
+      console.error('Error notifying Telegram bot:', error);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -216,12 +260,21 @@ const AuthCallback: React.FC = () => {
           
           <p className="mb-6 text-gray-600">{message}</p>
           
-          <Button
-            className="w-full"
-            onClick={() => navigate('/')}
-          >
-            Return to App
-          </Button>
+          {telegramUserId ? (
+            <Button
+              className="w-full"
+              onClick={() => window.close()}
+            >
+              Close Window
+            </Button>
+          ) : (
+            <Button
+              className="w-full"
+              onClick={() => navigate('/')}
+            >
+              Return to App
+            </Button>
+          )}
         </div>
       </div>
     </div>

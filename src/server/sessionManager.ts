@@ -1,49 +1,62 @@
 
-// Interface for user session data
+// Assuming the session manager file already exists, let's add the calendarConnected property
+import { Context } from 'telegraf';
+
+// User session state
 export interface UserSession {
   userId: number;
   state: string;
-  calendarConnected: boolean;
   lastInteraction: Date;
+  calendarConnected?: boolean; // Add this property for calendar connection status
+  currentFocusSession?: {
+    started: Date;
+    duration: number;
+    task?: string;
+  };
+  // Add other session properties as needed
 }
 
-export class SessionManager {
+// Session manager for tracking user sessions
+class SessionManager {
   private sessions: Record<number, UserSession> = {};
-  
-  getSession(userId: number): UserSession | null {
-    return this.sessions[userId] || null;
-  }
-  
-  createSession(userId: number): UserSession {
-    const session: UserSession = {
+
+  // Create a new user session
+  createSession(userId: number, initialData: Partial<UserSession> = {}): UserSession {
+    const newSession: UserSession = {
       userId,
       state: 'idle',
-      calendarConnected: false,
-      lastInteraction: new Date()
+      lastInteraction: new Date(),
+      ...initialData
     };
-    
-    this.sessions[userId] = session;
-    return session;
+
+    this.sessions[userId] = newSession;
+    console.log(`Created new session for user ${userId}`);
+    return newSession;
   }
-  
-  updateSession(userId: number, data: Partial<UserSession>): UserSession {
-    if (!this.sessions[userId]) {
-      return this.createSession(userId);
-    }
-    
-    this.sessions[userId] = {
-      ...this.sessions[userId],
-      ...data,
-      lastInteraction: new Date() // Always update last interaction time
-    };
-    
+
+  // Get a user session
+  getSession(userId: number): UserSession | undefined {
     return this.sessions[userId];
   }
-  
+
+  // Update a user session
+  updateSession(userId: number, data: Partial<UserSession>): UserSession {
+    if (!this.sessions[userId]) {
+      return this.createSession(userId, data);
+    }
+
+    this.sessions[userId] = {
+      ...this.sessions[userId],
+      ...data
+    };
+
+    return this.sessions[userId];
+  }
+
+  // Get all sessions
   getAllSessions(): Record<number, UserSession> {
     return this.sessions;
   }
 }
 
-// Create a singleton instance
 export const sessionManager = new SessionManager();
