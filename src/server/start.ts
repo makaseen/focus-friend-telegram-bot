@@ -10,5 +10,9 @@ console.log(`Bot Token: ${config.telegramToken ? '✓ Set' : '✗ Missing'}`);
 console.log(`Port: ${config.port}`);
 console.log('---------------------------------------');
 
-// This file is only used when starting the server directly (not through telegramBot.ts)
-// It ensures all exports and setup from telegramBot.ts are properly initialized
+// Force Telegraf to handle the update
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
+
+console.log('Bot startup completed. Ready to handle messages.');
+console.log('---------------------------------------');
