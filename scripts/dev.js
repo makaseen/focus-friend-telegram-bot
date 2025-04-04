@@ -1,11 +1,16 @@
 
-const { spawn } = require('child_process');
-const path = require('path');
+import { spawn } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the current file's directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 console.log('Starting server in development mode with nodemon...');
 
 // Run nodemon with ts-node for development
-const nodemon = spawn('npx', ['nodemon', '--watch', 'src/server', '--ext', 'ts', '--exec', 'ts-node', 'src/server/start.ts'], {
+const nodemon = spawn('npx', ['nodemon', '--watch', 'src/server', '--ext', 'ts', '--exec', 'ts-node', '--esm', 'src/server/start.ts'], {
   stdio: 'inherit',
   cwd: path.resolve(__dirname, '..')
 });
