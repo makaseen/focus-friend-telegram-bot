@@ -1,5 +1,4 @@
 
-// Assuming the session manager file already exists, let's add the calendarConnected property
 import { Context } from 'telegraf';
 
 // User session state
