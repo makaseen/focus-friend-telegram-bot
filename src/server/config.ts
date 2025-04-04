@@ -29,6 +29,23 @@ export const validateConfig = (): boolean => {
   } else {
     const tokenPreview = config.telegramToken.slice(0, 5) + '...' + config.telegramToken.slice(-5);
     console.log(`Token appears to be set: ${tokenPreview}`);
+    console.log(`Token length: ${config.telegramToken.length}`);
+    
+    // More detailed token validation
+    const [botId, botToken] = config.telegramToken.split(':');
+    if (!botId || !botToken) {
+      console.error('ERROR: Token parts could not be separated');
+      isValid = false;
+    } else {
+      console.log(`Token parts: ID=${botId} (${botId.length} chars), Token=${botToken.slice(0, 3)}... (${botToken.length} chars)`);
+      if (!/^\d+$/.test(botId)) {
+        console.error('ERROR: Bot ID part is not numeric');
+        isValid = false;
+      }
+      if (botToken.length < 30) {
+        console.error('WARNING: Bot token part seems too short');
+      }
+    }
   }
   
   // Only validate webhook config if we're using webhooks

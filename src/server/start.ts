@@ -10,16 +10,22 @@ console.log(`Bot Token: ${config.telegramToken ? (config.telegramToken.slice(0, 
 console.log(`Port: ${config.port}`);
 console.log('---------------------------------------');
 
-// Start the bot
-startBot()
-  .then(() => {
-    console.log('Bot started successfully!');
-    console.log('---------------------------------------');
-  })
-  .catch((error) => {
-    console.error('Failed to start bot:', error);
-    process.exit(1);
-  });
+// Don't start the bot automatically in development when imported as a module
+// This prevents multiple instances when hot reloading
+const isMainModule = require.main === module;
+
+if (isMainModule) {
+  // Start the bot
+  startBot()
+    .then(() => {
+      console.log('Bot started successfully!');
+      console.log('---------------------------------------');
+    })
+    .catch((error) => {
+      console.error('Failed to start bot:', error);
+      process.exit(1);
+    });
+}
 
 // Force Telegraf to handle the update
 process.once('SIGINT', () => bot.stop('SIGINT'));

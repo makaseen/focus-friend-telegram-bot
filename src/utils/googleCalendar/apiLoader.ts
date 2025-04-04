@@ -3,15 +3,36 @@ import { getClientCredentials } from './utils';
 import { handleApiError } from './utils';
 import { SCOPES } from './constants';
 
+// Track initialization status
+let isApiLoading = false;
+let isApiInitialized = false;
+let initializationPromise: Promise<void> | null = null;
+
 // Initialize the Google API client with new Identity Services
 export const loadGoogleApi = (): Promise<void> => {
-  return new Promise((resolve, reject) => {
+  // If already initialized, return resolved promise
+  if (isApiInitialized) {
+    return Promise.resolve();
+  }
+  
+  // If already loading, return the existing promise
+  if (isApiLoading && initializationPromise) {
+    console.log("Google API already loading - returning existing promise");
+    return initializationPromise;
+  }
+  
+  // Set loading flag
+  isApiLoading = true;
+  
+  // Create new initialization promise
+  initializationPromise = new Promise((resolve, reject) => {
     const { clientId } = getClientCredentials();
     
     // Check if client ID is configured
     if (!clientId) {
       const errorMsg = "Google client ID is not configured. Please set up your OAuth credentials.";
       console.error(errorMsg);
+      isApiLoading = false;
       reject(new Error(errorMsg));
       return;
     }
@@ -33,6 +54,7 @@ export const loadGoogleApi = (): Promise<void> => {
 
       script.onerror = (error) => {
         console.error("Error loading Google Identity Services script:", error);
+        isApiLoading = false;
         reject(error);
       };
 
@@ -42,6 +64,8 @@ export const loadGoogleApi = (): Promise<void> => {
       loadGapiClient(resolve, reject);
     }
   });
+  
+  return initializationPromise;
 };
 
 // Load GAPI client for API calls (separate from auth)
@@ -60,6 +84,7 @@ const loadGapiClient = (resolve: () => void, reject: (error: any) => void): void
 
     script.onerror = (error) => {
       console.error("Error loading Google API script:", error);
+      isApiLoading = false;
       reject(error);
     };
 
@@ -79,6 +104,7 @@ const loadGapiClient = (resolve: () => void, reject: (error: any) => void): void
     // Timeout after 10 seconds
     setTimeout(() => {
       clearInterval(checkGapi);
+      isApiLoading = false;
       reject(new Error("Timeout waiting for Google API to load"));
     }, 10000);
   }
@@ -87,6 +113,7 @@ const loadGapiClient = (resolve: () => void, reject: (error: any) => void): void
 // Initialize the GAPI client (for Calendar API, not auth)
 const initializeGapiClient = (resolve: () => void, reject: (error: any) => void): void => {
   if (!window.gapi) {
+    isApiLoading = false;
     reject(new Error("Google API not loaded"));
     return;
   }
@@ -99,19 +126,24 @@ const initializeGapiClient = (resolve: () => void, reject: (error: any) => void)
         // Load the Calendar API
         window.gapi.client.load('calendar', 'v3').then(() => {
           console.log("Google Calendar API loaded successfully");
+          isApiLoading = false;
+          isApiInitialized = true;
           resolve();
         }).catch((error: any) => {
           console.error("Error loading Calendar API:", error);
           handleApiError(error, "Google Calendar API Loading Failed");
+          isApiLoading = false;
           reject(error);
         });
       }).catch((error: any) => {
         console.error("Error initializing Google API client:", error);
         handleApiError(error, "Google API Initialization Failed");
+        isApiLoading = false;
         reject(error);
       });
     } catch (error) {
       console.error("Exception initializing Google API client:", error);
+      isApiLoading = false;
       reject(error);
     }
   });
