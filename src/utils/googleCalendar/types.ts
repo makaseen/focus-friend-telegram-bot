@@ -28,7 +28,7 @@ export interface CalendarEvent {
 export interface CalendarEventListParams {
   calendarId: string;
   timeMin: string;
-  timeMax: string;  // Added missing timeMax property
+  timeMax: string;
   showDeleted: boolean;
   singleEvents: boolean;
   maxResults: number;

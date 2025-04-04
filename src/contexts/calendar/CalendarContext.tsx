@@ -2,7 +2,7 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { googleCalendarApi } from '@/utils/googleCalendar';
 import { getSavedConnectionStatus, saveConnectionStatus } from './utils';
-import { CalendarContextType } from './types';
+import { CalendarContextType, CalendarProviderProps } from './types';
 import { toast } from '@/hooks/use-toast';
 
 export const CalendarContext = createContext<CalendarContextType | undefined>(undefined);

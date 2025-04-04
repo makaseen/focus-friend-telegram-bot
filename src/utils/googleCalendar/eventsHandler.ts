@@ -80,7 +80,7 @@ export class EventsHandler {
     maxResults: number
   ): Promise<CalendarEvent[]> {
     try {
-      const response = await window.gapi.client.calendar.events.list({
+      const params: CalendarEventListParams = {
         'calendarId': PRIMARY_CALENDAR_ID,
         'timeMin': timeRange.now.toISOString(),
         'timeMax': timeRange.oneMonthFromNow.toISOString(),
@@ -88,7 +88,9 @@ export class EventsHandler {
         'singleEvents': true,
         'maxResults': maxResults,
         'orderBy': 'startTime'
-      });
+      };
+      
+      const response = await window.gapi.client.calendar.events.list(params);
       
       return response.result.items || [];
     } catch (apiError: any) {
