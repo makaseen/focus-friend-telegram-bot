@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { googleCalendarApi } from '@/utils/googleCalendar';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -12,18 +12,35 @@ const AuthCallback: React.FC = () => {
   const [message, setMessage] = useState('Processing authentication response...');
   const location = useLocation();
   const navigate = useNavigate();
+  const params = useParams();
   
   useEffect(() => {
     const processAuth = async () => {
       try {
         console.log('Processing auth callback on path:', location.pathname, 'with search:', location.search);
-        // Check if this is the initial auth request or the callback
-        const isInitialAuth = location.pathname === '/auth/google';
         
-        if (isInitialAuth) {
+        // Check if this is the initial auth request or the callback
+        const isInitialAuth = location.pathname.startsWith('/auth/google');
+        const isCallback = location.pathname === '/auth/callback';
+        
+        console.log('Auth type:', { isInitialAuth, isCallback });
+        
+        if (isInitialAuth && !isCallback) {
           console.log('Initial auth request, redirecting to Google...');
-          // This is the initial request, redirect to Google OAuth
-          const state = location.search.substring(1); // Remove the ? from the search params
+          
+          // Get state from either URL parameters or query string
+          let state = '';
+          
+          // Check if it's in the URL parameters (from router params)
+          if (params.state) {
+            state = params.state;
+          } else {
+            // If not in URL params, try to get it from query string
+            state = location.search.substring(1); // Remove the ? from the search params
+          }
+          
+          console.log('Using state:', state);
+          
           // Get the client ID from localStorage
           const clientId = localStorage.getItem('googleCalendarClientId');
           
@@ -38,10 +55,10 @@ const AuthCallback: React.FC = () => {
             return;
           }
           
-          // Parse the state parameter to check if it's a Telegram bot request
+          // Check if it's a Telegram bot request
           const isTelegramAuth = state?.includes('telegram-');
           
-          // Define redirect URI based on whether it's a Telegram bot request
+          // Define redirect URI - make sure this matches exactly what's configured in Google Cloud Console
           const redirectUri = `${window.location.origin}/auth/callback`;
           
           const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly&response_type=code&state=${state}&access_type=offline&prompt=consent`;
@@ -149,7 +166,7 @@ const AuthCallback: React.FC = () => {
     };
 
     processAuth();
-  }, [location, navigate]);
+  }, [location, navigate, params]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
