@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { googleCalendarApi } from '@/utils/googleCalendar';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { getOAuthErrorMessage } from '@/utils/googleCalendar/utils';
-import { SCOPES } from '@/utils/googleCalendar/constants';
+import { SCOPES } from '@/utils/googleCalendar/auth';
 
 const AuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
