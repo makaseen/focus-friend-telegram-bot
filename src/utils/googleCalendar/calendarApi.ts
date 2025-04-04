@@ -232,13 +232,11 @@ class GoogleCalendarApi {
 
   // Check if user is currently authenticated
   isAuthenticated(): boolean {
-    // Refresh token from storage to ensure we have the latest state
-    if (!this.token) {
-      this.loadTokenFromStorage();
-    }
+    // Always try to refresh token from storage to ensure we have the latest state
+    this.loadTokenFromStorage();
     
     const isAuth = !!this.token && !!this.token.access_token;
-    console.log("Authentication check:", isAuth);
+    console.log("Authentication check:", isAuth, "Token exists:", !!this.token);
     return isAuth;
   }
 
@@ -246,8 +244,13 @@ class GoogleCalendarApi {
   async getUpcomingEvents(maxResults = 10): Promise<any[]> {
     console.log("Getting upcoming events, token status:", !!this.token);
     
-    // Try to load token again if not present
-    if (!this.token && !this.loadTokenFromStorage()) {
+    // Always try to load token again if not present
+    if (!this.token) {
+      this.loadTokenFromStorage();
+    }
+    
+    // Double-check authentication after trying to load token
+    if (!this.token || !this.token.access_token) {
       console.error('Not authenticated with Google Calendar');
       throw new Error('Not authenticated with Google Calendar');
     }
@@ -296,6 +299,13 @@ class GoogleCalendarApi {
       }
     } catch (error) {
       console.error('Error fetching calendar events:', error);
+      
+      // Check for authentication errors and clear token if needed
+      if (error instanceof Error && error.message.includes('Not authenticated')) {
+        this.token = null;
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      }
+      
       handleApiError(error, "Failed to Load Events");
       return [];
     }

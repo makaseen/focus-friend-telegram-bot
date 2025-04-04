@@ -24,8 +24,11 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
 
   // Check connection status on mount and when URL changes (for auth callback)
   useEffect(() => {
-    const checkConnectionStatus = () => {
+    const checkConnectionStatus = async () => {
       try {
+        // Force a token refresh from storage first
+        googleCalendarApi.loadTokenFromStorage();
+        
         // Check if we have previously connected status
         const connected = getSavedConnectionStatus();
         console.log("Calendar connection status check:", connected);
@@ -50,8 +53,17 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     // Also check when URL changes (could be returning from auth)
     window.addEventListener('popstate', checkConnectionStatus);
     
+    // Check on location hash change (for OAuth2 redirects)
+    const handleHashChange = () => {
+      console.log("Hash changed, checking connection status");
+      checkConnectionStatus();
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    
     return () => {
       window.removeEventListener('popstate', checkConnectionStatus);
+      window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
 
@@ -112,6 +124,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
 
   // Fetch calendar events
   const refreshEvents = async (): Promise<void> => {
+    // Force refresh token from storage before checking
+    googleCalendarApi.loadTokenFromStorage();
+    
     // Check if authenticated before proceeding
     if (!googleCalendarApi.isAuthenticated()) {
       console.warn('Attempted to fetch events but calendar is not connected.');

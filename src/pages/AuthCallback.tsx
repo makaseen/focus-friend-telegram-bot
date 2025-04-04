@@ -88,6 +88,9 @@ const AuthCallback: React.FC = () => {
             const success = await googleCalendarApi.handleAuthCode(code);
             
             if (success) {
+              // Force refresh the token in memory after successful auth
+              googleCalendarApi.loadTokenFromStorage();
+              
               setStatus('success');
               const isTelegramAuth = state?.includes('telegram-');
               
@@ -95,9 +98,6 @@ const AuthCallback: React.FC = () => {
                 setMessage('Calendar connected successfully. You can now close this window and return to Telegram.');
               } else {
                 setMessage('Calendar connected successfully. Redirecting you back to the app...');
-                
-                // Reload Google Calendar token from storage to ensure it's available
-                googleCalendarApi.loadTokenFromStorage();
                 
                 // Redirect back to home page after successful authentication
                 setTimeout(() => {
