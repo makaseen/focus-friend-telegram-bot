@@ -7,11 +7,15 @@ const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 // Get the client ID from environment or use a placeholder for development
 // In a production app, this should be set properly in your hosting environment
 let CLIENT_ID = '';
+let CLIENT_SECRET = '';
 
 // Try to load CLIENT_ID from window.__ENV__ if available (useful for production deployments)
 try {
   if (window.__ENV__ && window.__ENV__.GOOGLE_CLIENT_ID) {
     CLIENT_ID = window.__ENV__.GOOGLE_CLIENT_ID;
+  }
+  if (window.__ENV__ && window.__ENV__.GOOGLE_CLIENT_SECRET) {
+    CLIENT_SECRET = window.__ENV__.GOOGLE_CLIENT_SECRET;
   }
 } catch (e) {
   console.error('Could not load environment variables', e);
@@ -23,28 +27,55 @@ try {
   if (savedClientId) {
     CLIENT_ID = savedClientId;
   }
+  
+  const savedClientSecret = localStorage.getItem('googleCalendarClientSecret');
+  if (savedClientSecret) {
+    CLIENT_SECRET = savedClientSecret;
+  }
 } catch (e) {
-  console.error('Could not load client ID from localStorage', e);
+  console.error('Could not load client credentials from localStorage', e);
 }
 
 // Display meaningful error message for common OAuth errors
 const getOAuthErrorMessage = (error: any): string => {
   console.error('OAuth error details:', error);
   
+  if (!error) {
+    return "An unknown authentication error occurred. Please check your console for details.";
+  }
+  
+  if (typeof error === 'string') {
+    if (error.includes('idpframe_initialization_failed')) {
+      return "OAuth initialization failed. Please ensure your Google OAuth Client ID is correct and the app is properly configured in the Google Cloud Console.";
+    }
+    return error;
+  }
+  
   if (error?.error === 'invalid_client') {
-    return "Invalid OAuth client ID. Please make sure you've configured a valid Google Cloud project with OAuth credentials.";
+    return "Invalid OAuth client ID. Please make sure you've configured a valid Google Cloud project with OAuth credentials and that your application's domain is added to the authorized JavaScript origins.";
   }
   
   if (error?.error === 'access_denied') {
     return "You denied access to your Google Calendar.";
   }
   
-  // Check for specific error messages in the error object
-  if (error?.details && typeof error.details === 'string' && error.details.includes('invalid_client')) {
-    return "Invalid OAuth client ID. Please check your Google Cloud Console configuration.";
+  if (error?.details) {
+    if (typeof error.details === 'string') {
+      if (error.details.includes('invalid_client')) {
+        return "Invalid OAuth client ID. Please check your Google Cloud Console configuration and ensure your domain is authorized.";
+      }
+      if (error.details.includes('idpframe_initialization_failed')) {
+        return "Google OAuth initialization failed. Please verify your Google Cloud Console settings and make sure your OAuth credentials are correctly configured.";
+      }
+      return error.details;
+    }
   }
   
-  return "An error occurred during Google authentication. Please try again.";
+  if (error?.message) {
+    return error.message;
+  }
+  
+  return "An error occurred during Google authentication. Please check your Google Cloud Console configuration and try again.";
 };
 
 export interface TokenResponse {
@@ -150,11 +181,15 @@ class GoogleCalendarApi {
     window.gapi.load('client:auth2', () => {
       try {
         console.log("Initializing Google API client with client ID:", CLIENT_ID);
-        window.gapi.client.init({
+        
+        // Initialize the client with or without client secret
+        const initOptions: any = {
           clientId: CLIENT_ID,
           scope: SCOPES,
           plugin_name: 'Focus Friend'
-        }).then(() => {
+        };
+        
+        window.gapi.client.init(initOptions).then(() => {
           console.log("Google API client initialized successfully");
           this.gapiInitialized = true;
           resolve();
@@ -195,6 +230,21 @@ class GoogleCalendarApi {
     localStorage.removeItem('googleCalendarToken');
     this.gapiInitialized = false;
   }
+  
+  // Update client secret (useful for runtime configuration)
+  setClientSecret(clientSecret: string): void {
+    if (clientSecret === undefined) return;
+    
+    CLIENT_SECRET = clientSecret.trim();
+    
+    if (CLIENT_SECRET) {
+      localStorage.setItem('googleCalendarClientSecret', CLIENT_SECRET);
+      console.log("Client Secret set");
+    } else {
+      localStorage.removeItem('googleCalendarClientSecret');
+      console.log("Client Secret cleared");
+    }
+  }
 
   // Handle the Google Sign In process
   async signIn(): Promise<boolean> {
@@ -214,10 +264,30 @@ class GoogleCalendarApi {
       
       console.log("Getting auth instance");
       const googleAuth = window.gapi.auth2.getAuthInstance();
+      
+      // Check if already signed in
+      if (googleAuth.isSignedIn.get()) {
+        console.log("User is already signed in");
+        const currentUser = googleAuth.currentUser.get();
+        const authResponse = currentUser.getAuthResponse();
+        
+        this.token = {
+          access_token: authResponse.access_token,
+          expires_in: authResponse.expires_in,
+          token_type: 'Bearer',
+          scope: SCOPES,
+          expiry_date: Date.now() + (authResponse.expires_in * 1000)
+        };
+        
+        localStorage.setItem('googleCalendarToken', JSON.stringify(this.token));
+        return true;
+      }
+      
       console.log("Signing in with Google");
       const user = await googleAuth.signIn({
         prompt: 'consent' // Always show the consent screen
       });
+      
       const authResponse = user.getAuthResponse();
       
       console.log("Successfully authenticated with Google");

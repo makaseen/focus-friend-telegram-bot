@@ -11,12 +11,18 @@ import CalendarEvents from "@/components/calendar/CalendarEvents";
 const HeroSection = () => {
   const [showBotModal, setShowBotModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showSecretInput, setShowSecretInput] = useState(false);
+  const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
+  
   const { 
     calendarConnected, 
     isConnecting, 
     isConfigured,
     connectCalendar, 
     disconnectCalendar, 
+    updateClientId,
+    updateClientSecret,
     events, 
     refreshEvents 
   } = useCalendar();
@@ -33,6 +39,19 @@ const HeroSection = () => {
 
   const initiateCalendarConnection = () => {
     connectCalendar();
+  };
+  
+  const handleSaveCredentials = () => {
+    if (clientId) {
+      updateClientId(clientId);
+      if (showSecretInput && clientSecret) {
+        updateClientSecret(clientSecret);
+      }
+      // Close modal if credentials were successfully saved
+      if (isConfigured) {
+        setShowCalendarModal(false);
+      }
+    }
   };
 
   return (
@@ -92,7 +111,12 @@ const HeroSection = () => {
 
       <Modal
         isOpen={showCalendarModal}
-        onClose={() => setShowCalendarModal(false)}
+        onClose={() => {
+          setShowCalendarModal(false);
+          setShowSecretInput(false);
+          setClientId('');
+          setClientSecret('');
+        }}
         title="Connect Google Calendar"
       >
         {!isConfigured ? (
@@ -103,8 +127,57 @@ const HeroSection = () => {
               <li>Enable the Google Calendar API for your project</li>
               <li>Create OAuth 2.0 credentials (OAuth client ID)</li>
               <li>Add authorized JavaScript origins for your domain</li>
-              <li>Copy your Client ID and set it in the configuration</li>
+              <li>Copy your Client ID and set it below</li>
             </ol>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Client ID <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className="w-full p-2 text-sm border border-gray-300 rounded"
+                placeholder="Enter your Google OAuth client ID"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                e.g., 012345678901-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
+              </p>
+            </div>
+            
+            {!showSecretInput ? (
+              <button
+                onClick={() => setShowSecretInput(true)}
+                className="text-xs text-blue-500 hover:underline mb-4 block"
+              >
+                + Add Client Secret (optional)
+              </button>
+            ) : (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Client Secret (optional)
+                </label>
+                <input
+                  type="password"
+                  value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)}
+                  className="w-full p-2 text-sm border border-gray-300 rounded"
+                  placeholder="Enter your Google OAuth client secret"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  For advanced configurations - typically not needed for web applications
+                </p>
+              </div>
+            )}
+            
+            <Button
+              className="w-full mt-4 bg-focus hover:bg-focus-dark"
+              onClick={handleSaveCredentials}
+              disabled={!clientId}
+            >
+              Save Credentials
+            </Button>
           </div>
         ) : (
           <>

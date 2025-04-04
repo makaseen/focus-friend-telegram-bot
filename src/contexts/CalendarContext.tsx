@@ -12,6 +12,7 @@ interface CalendarContextType {
   connectCalendar: () => void;
   disconnectCalendar: () => void;
   updateClientId: (clientId: string) => void;
+  updateClientSecret: (clientSecret: string) => void;
   events: any[];
   refreshEvents: () => Promise<void>;
 }
@@ -64,6 +65,14 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         variant: "destructive",
       });
     }
+  };
+  
+  const updateClientSecret = (clientSecret: string) => {
+    googleCalendarApi.setClientSecret(clientSecret);
+    toast({
+      title: "Client Secret Updated",
+      description: "Google Calendar Client Secret has been updated.",
+    });
   };
 
   const connectCalendar = async () => {
@@ -155,6 +164,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       connectCalendar,
       disconnectCalendar,
       updateClientId,
+      updateClientSecret,
       events,
       refreshEvents
     }}>
@@ -163,7 +173,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Changed to a named function declaration instead of an arrow function for better Fast Refresh compatibility
+// Changed to a named function declaration for better Fast Refresh compatibility
 export function useCalendar() {
   const context = useContext(CalendarContext);
   if (context === undefined) {
@@ -173,9 +183,11 @@ export function useCalendar() {
 }
 
 export function CalendarConfigAlert() {
-  const { isConfigured, updateClientId } = useCalendar();
+  const { isConfigured, updateClientId, updateClientSecret } = useCalendar();
   const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
   const [showInput, setShowInput] = useState(false);
+  const [showSecretInput, setShowSecretInput] = useState(false);
 
   if (isConfigured) return null;
 
@@ -195,23 +207,60 @@ export function CalendarConfigAlert() {
           </button>
         ) : (
           <div className="mt-2">
-            <input
-              type="text"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="w-full p-2 text-sm border border-gray-300 rounded mb-2"
-              placeholder="Enter your Google OAuth client ID"
-            />
+            <div className="mb-2">
+              <label className="block text-xs mb-1">Client ID <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className="w-full p-2 text-sm border border-gray-300 rounded mb-1"
+                placeholder="Enter your Google OAuth client ID"
+              />
+              <p className="text-xs text-gray-600">
+                From Google Cloud Console &gt; APIs &amp; Services &gt; Credentials
+              </p>
+            </div>
+            
+            {!showSecretInput ? (
+              <button
+                onClick={() => setShowSecretInput(true)}
+                className="text-xs underline hover:text-gray-700 mb-2 block"
+              >
+                + Add Client Secret (optional)
+              </button>
+            ) : (
+              <div className="mb-2">
+                <label className="block text-xs mb-1">Client Secret (optional)</label>
+                <input
+                  type="password"
+                  value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)}
+                  className="w-full p-2 text-sm border border-gray-300 rounded mb-1"
+                  placeholder="Enter your Google OAuth client secret"
+                />
+              </div>
+            )}
+            
             <div className="flex space-x-2">
               <button 
-                onClick={() => updateClientId(clientId)}
+                onClick={() => {
+                  updateClientId(clientId);
+                  if (showSecretInput && clientSecret) {
+                    updateClientSecret(clientSecret);
+                  }
+                }}
                 className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
                 disabled={!clientId}
               >
                 Save
               </button>
               <button 
-                onClick={() => setShowInput(false)}
+                onClick={() => {
+                  setShowInput(false);
+                  setShowSecretInput(false);
+                  setClientId('');
+                  setClientSecret('');
+                }}
                 className="text-xs bg-gray-300 px-2 py-1 rounded hover:bg-gray-400"
               >
                 Cancel
