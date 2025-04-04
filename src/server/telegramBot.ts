@@ -182,52 +182,7 @@ bot.on(message('text'), async (ctx) => {
   }
 });
 
-// Function to start the bot
-const startBot = async () => {
-  if (config.useWebhook) {
-    // Webhook mode
-    const webhookPath = `/telegram-webhook/${config.webhookSecret}`;
-    
-    app.post(webhookPath, (req, res) => {
-      console.log('Received webhook request:', JSON.stringify(req.body, null, 2));
-      bot.handleUpdate(req.body);
-      res.status(200).json({ success: true });
-    });
-    
-    // Set webhook
-    const webhookUrl = `${config.webhookUrl}${webhookPath}`;
-    console.log(`Setting webhook URL to: ${webhookUrl}`);
-    
-    try {
-      await bot.telegram.setWebhook(webhookUrl);
-      console.log('Webhook set successfully');
-      
-      // Verify the webhook is set correctly
-      const info = await bot.telegram.getWebhookInfo();
-      console.log('Webhook info:', info);
-    } catch (error) {
-      console.error('Failed to set webhook:', error);
-      throw new Error('Failed to set webhook');
-    }
-  } else {
-    // Polling mode (development)
-    console.log('Starting bot in polling mode...');
-    
-    try {
-      // Make sure we're not using webhooks
-      await bot.telegram.deleteWebhook({ drop_pending_updates: true });
-      console.log('Webhook deleted successfully');
-      
-      // Launch the bot in polling mode
-      await bot.launch();
-      console.log('Bot is running successfully in polling mode');
-    } catch (error) {
-      console.error('Failed to start bot in polling mode:', error);
-      throw new Error('Failed to start bot in polling mode');
-    }
-  }
-};
-
+// Function to start the bot - REMOVED first declaration of startBot here and kept only one implementation
 // Express server endpoints
 
 // Health check endpoint with more detailed info
@@ -317,7 +272,7 @@ const startServer = () => {
   }
 };
 
-// Modified startBot function for better error handling - removing duplicate definition
+// Single implementation of startBot function with better error handling
 const startBot = async () => {
   console.log('🤖 Starting Telegram bot...');
   
@@ -376,7 +331,8 @@ const startBot = async () => {
 const server = startServer();
 
 // Fix: Check if server is properly initialized before proceeding with bot startup
-if (server) {
+// Modified to avoid the void type truthiness check
+if (server !== undefined) {
   startBot()
     .then((success) => {
       if (success) {
