@@ -16,7 +16,7 @@ const AuthCallback: React.FC = () => {
   useEffect(() => {
     const processAuth = async () => {
       try {
-        console.log('Processing auth callback on path:', location.pathname);
+        console.log('Processing auth callback on path:', location.pathname, 'with search:', location.search);
         // Check if this is the initial auth request or the callback
         const isInitialAuth = location.pathname === '/auth/google';
         
@@ -42,9 +42,7 @@ const AuthCallback: React.FC = () => {
           const isTelegramAuth = state?.includes('telegram-');
           
           // Define redirect URI based on whether it's a Telegram bot request
-          const redirectUri = isTelegramAuth 
-            ? `${window.location.origin}/auth/callback`
-            : `${window.location.origin}/auth/callback`;
+          const redirectUri = `${window.location.origin}/auth/callback`;
           
           const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly&response_type=code&state=${state}&access_type=offline&prompt=consent`;
           
@@ -60,7 +58,7 @@ const AuthCallback: React.FC = () => {
         const state = params.get('state');
         
         console.log('Auth callback parameters:', { 
-          code: code ? code.substring(0, 5) + '...' : null, 
+          code: code ? "Received" : null, 
           error, 
           state 
         });

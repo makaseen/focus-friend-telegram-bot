@@ -20,19 +20,21 @@ class GoogleCalendarApi {
       const savedToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
       if (savedToken) {
         const parsedToken = JSON.parse(savedToken) as TokenResponse;
-        // Check if token is expired
+        // Check if token is expired - this is crucial
         if (parsedToken.expiry_date && parsedToken.expiry_date > Date.now()) {
           this.token = parsedToken;
-          console.log("Loaded valid token from storage");
+          console.log("Loaded valid token from storage:", !!parsedToken.access_token);
           return true;
         } else {
           console.log("Found expired token in storage, removing");
           localStorage.removeItem(STORAGE_KEYS.TOKEN);
+          this.token = null;
         }
       }
     } catch (error) {
       console.error('Failed to parse saved token', error);
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      this.token = null;
     }
     return false;
   }
@@ -101,17 +103,20 @@ class GoogleCalendarApi {
   private handleTokenResponse(response: any) {
     if (!response || !response.access_token) return;
     
-    console.log("Processing token response:", { access_token: response.access_token?.substring(0, 5) + '...', expires_in: response.expires_in });
+    console.log("Processing token response:", { access_token: "Received" });
+    
+    // Explicitly set expiry_date if it doesn't exist
+    const expiryDate = response.expiry_date || (Date.now() + (response.expires_in * 1000));
     
     this.token = {
       access_token: response.access_token,
       expires_in: response.expires_in,
-      token_type: 'Bearer',
-      scope: response.scope,
-      expiry_date: Date.now() + (response.expires_in * 1000)
+      token_type: response.token_type || 'Bearer',
+      scope: response.scope || SCOPES,
+      expiry_date: expiryDate
     };
     
-    // Store token in localStorage
+    // Store token in localStorage - crucial for persistence
     localStorage.setItem(STORAGE_KEYS.TOKEN, JSON.stringify(this.token));
     
     console.log("Token successfully saved to localStorage");
@@ -193,7 +198,9 @@ class GoogleCalendarApi {
       const mockTokenResponse = {
         access_token: "mock_access_token_" + Date.now(),
         expires_in: 3600,
+        token_type: "Bearer",
         scope: SCOPES,
+        expiry_date: Date.now() + (3600 * 1000)
       };
       
       this.handleTokenResponse(mockTokenResponse);
@@ -233,19 +240,21 @@ class GoogleCalendarApi {
   // Check if user is currently authenticated
   isAuthenticated(): boolean {
     // Always try to refresh token from storage to ensure we have the latest state
-    this.loadTokenFromStorage();
+    if (!this.token) {
+      this.loadTokenFromStorage();
+    }
     
-    const isAuth = !!this.token && !!this.token.access_token;
+    const isAuth = !!this.token && !!this.token.access_token && !!this.token.expiry_date && this.token.expiry_date > Date.now();
     console.log("Authentication check:", isAuth, "Token exists:", !!this.token);
     return isAuth;
   }
 
   // Fetch upcoming events from calendar
   async getUpcomingEvents(maxResults = 10): Promise<any[]> {
-    console.log("Getting upcoming events, token status:", !!this.token);
+    console.log("Getting upcoming events, token status:", !!this.token?.access_token);
     
     // Always try to load token again if not present
-    if (!this.token) {
+    if (!this.token || !this.token.access_token) {
       this.loadTokenFromStorage();
     }
     
@@ -301,13 +310,17 @@ class GoogleCalendarApi {
       console.error('Error fetching calendar events:', error);
       
       // Check for authentication errors and clear token if needed
-      if (error instanceof Error && error.message.includes('Not authenticated')) {
+      if (error instanceof Error && (
+          error.message.includes('Not authenticated') || 
+          error.message.includes('Invalid Credentials')
+        )) {
+        console.log("Authentication error detected, clearing token");
         this.token = null;
         localStorage.removeItem(STORAGE_KEYS.TOKEN);
       }
       
       handleApiError(error, "Failed to Load Events");
-      return [];
+      throw error; // Re-throw to allow proper handling up the chain
     }
   }
 }
