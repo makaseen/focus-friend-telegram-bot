@@ -10,7 +10,8 @@ export const STORAGE_KEYS = {
   TOKEN: 'googleCalendarToken',
   CLIENT_ID: 'googleCalendarClientId',
   CLIENT_SECRET: 'googleCalendarClientSecret',
-  CONNECTION_STATUS: 'googleCalendarConnected'
+  CONNECTION_STATUS: 'googleCalendarConnected',
+  LAST_REFRESH: 'googleCalendarLastRefresh'
 };
 
 // Calendar IDs
@@ -23,5 +24,8 @@ export const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
 export const MAX_TIME_RANGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 
 // API request parameters
-export const MAX_RETRY_ATTEMPTS = 2;
-export const RETRY_DELAY_MS = 1000; // 1 second
+export const MAX_RETRY_ATTEMPTS = 3; // Increased from 2 to 3
+export const RETRY_DELAY_MS = 2000; // Increased from 1 second to 2 seconds
+
+// Throttling parameters
+export const MIN_REFRESH_INTERVAL_MS = 60000; // Minimum 1 minute between refreshes

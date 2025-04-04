@@ -68,6 +68,25 @@ export class AuthHandler {
       callback: (tokenResponse: any) => {
         if (tokenResponse && tokenResponse.access_token) {
           console.log("Token received with scopes:", tokenResponse.scope);
+          
+          // Log requested vs received scopes
+          const requestedScopes = SCOPES.split(' ');
+          const receivedScopes = tokenResponse.scope.split(' ');
+          
+          console.log("Requested scopes:", requestedScopes);
+          console.log("Received scopes:", receivedScopes);
+          
+          // Check if we received all requested scopes
+          const missingScopes = requestedScopes.filter(scope => !receivedScopes.includes(scope));
+          if (missingScopes.length > 0) {
+            console.warn("Missing scopes:", missingScopes);
+            toast({
+              title: "Limited Calendar Access",
+              description: "Some calendar permissions were not granted. You may need to reconnect for full functionality.",
+              variant: "warning"
+            });
+          }
+          
           tokenManager.handleTokenResponse(tokenResponse);
           toast({
             title: "Calendar Connected",

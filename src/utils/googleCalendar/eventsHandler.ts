@@ -1,3 +1,4 @@
+
 import { loadGoogleApi } from './apiLoader';
 import { tokenManager } from './tokenManager';
 import { handleApiError } from './utils';
@@ -108,7 +109,8 @@ export class EventsHandler {
    */
   private shouldRetry(error: any): boolean {
     // Retry on 403 (permission) or 401 (auth) errors
-    if (error && (error.status === 403 || error.status === 401)) {
+    if (error && error.result && error.result.error && 
+        (error.result.error.code === 403 || error.result.error.code === 401)) {
       return true;
     }
     
@@ -162,27 +164,44 @@ export class EventsHandler {
         timeRange: `${params.timeMin} to ${params.timeMax}`
       });
       
-      const response = await window.gapi.client.calendar.events.list(params);
+      // Add more logging for debugging
+      console.log("Using access token:", tokenManager.token?.access_token ? "Present (not showing for security)" : "Missing");
       
-      console.log("Calendar API response received:", { 
-        status: response.status, 
-        resultLength: response.result.items?.length || 0 
-      });
-      
-      return response.result.items || [];
-    } catch (apiError: any) {
-      console.error("Google Calendar API error details:", apiError);
-      
-      // Check if this is a scope or permission issue
-      if (apiError && apiError.status === 403) {
-        console.error("Permission denied. This may be due to insufficient calendar scopes.");
+      try {
+        const response = await window.gapi.client.calendar.events.list(params);
         
-        // Specific error for scope issues
-        throw new Error("Calendar access denied. Please ensure you've granted permission to read your calendar data.");
-      } else {
-        // Forward other errors to the general error handler
-        throw apiError;
+        // Add more detailed response logging
+        console.log("Calendar API response received:", { 
+          status: response.status, 
+          resultLength: response.result?.items?.length || 0 
+        });
+        
+        return response.result.items || [];
+      } catch (apiError: any) {
+        // Enhanced error logging
+        console.error("Google Calendar API error details:", apiError);
+        
+        if (apiError && apiError.result && apiError.result.error) {
+          console.error("API Error code:", apiError.result.error.code);
+          console.error("API Error message:", apiError.result.error.message);
+        }
+        
+        // Check if this is a scope or permission issue
+        if (apiError && 
+            ((apiError.result && apiError.result.error && apiError.result.error.code === 403) || 
+             (apiError.status === 403))) {
+          console.error("Permission denied. This may be due to insufficient calendar scopes.");
+          
+          // Specific error for scope issues
+          throw new Error("Calendar access denied. Please ensure you've granted permission to read your calendar data.");
+        } else {
+          // Forward other errors to the general error handler
+          throw apiError;
+        }
       }
+    } catch (error: any) {
+      console.error("Error in fetchEvents:", error);
+      throw error;
     }
   }
 }
