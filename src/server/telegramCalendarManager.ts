@@ -3,7 +3,7 @@ import { Context } from 'telegraf';
 import { googleCalendarApi } from '../utils/googleCalendar/index.js';
 import { CalendarEvent, TokenResponse } from '../utils/googleCalendar/types.js';
 import { MAX_TIME_RANGE_MS } from '../utils/googleCalendar/constants.js';
-import { config } from './config.js';
+import { config } from './config';
 
 interface UserCalendarToken extends TokenResponse {
   userId: number;
@@ -178,4 +178,3 @@ export class TelegramCalendarManager {
     ];
   }
 }
-
