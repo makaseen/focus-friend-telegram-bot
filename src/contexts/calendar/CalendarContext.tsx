@@ -1,157 +1,111 @@
 
-import React, { createContext, useState, useEffect } from 'react';
-import { toast } from "@/hooks/use-toast";
-import { googleCalendarApi } from "@/utils/googleCalendar";
-import { CalendarContextType, CalendarProviderProps } from './types';
+import { createContext, useState, useEffect, ReactNode } from 'react';
+import { googleCalendarApi } from '@/utils/googleCalendar';
 import { getSavedConnectionStatus } from './utils';
+import { CalendarContextType } from './types';
 
-// Create the context with undefined as default value
 export const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
 
-export function CalendarProvider({ children }: CalendarProviderProps) {
-  const [calendarConnected, setCalendarConnected] = useState(getSavedConnectionStatus());
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isConfigured, setIsConfigured] = useState(googleCalendarApi.isConfigured());
-  const [events, setEvents] = useState<any[]>([]);
+type CalendarProviderProps = {
+  children: ReactNode;
+};
 
-  // Initialize and check authentication state
+export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) => {
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [clientId, setClientId] = useState<string>('');
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      const isAuth = googleCalendarApi.isAuthenticated();
-      setCalendarConnected(isAuth);
-      setIsConfigured(googleCalendarApi.isConfigured());
-      
-      if (isAuth) {
-        refreshEvents();
-      }
-    };
+    // Check if we have previously connected status
+    const connected = getSavedConnectionStatus();
+    setIsConnected(connected);
     
-    checkAuthStatus();
-    
-    console.log(`Calendar connection status: ${calendarConnected}`);
-    console.log(`Calendar configured status: ${isConfigured}`);
+    // Load client ID from storage if available
+    const savedClientId = localStorage.getItem('googleCalendarClientId') || '';
+    setClientId(savedClientId);
   }, []);
 
-  const updateClientId = (clientId: string) => {
-    if (clientId && clientId.trim() !== '') {
-      googleCalendarApi.setClientId(clientId.trim());
-      setIsConfigured(true);
-      toast({
-        title: "Client ID Updated",
-        description: "Google Calendar Client ID has been updated.",
-      });
-    } else {
-      toast({
-        title: "Invalid Client ID",
-        description: "Please provide a valid Google OAuth client ID.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const updateClientSecret = (clientSecret: string) => {
-    googleCalendarApi.setClientSecret(clientSecret);
-    toast({
-      title: "Client Secret Updated",
-      description: "Google Calendar Client Secret has been updated.",
-    });
-  };
-
-  const connectCalendar = async () => {
-    if (calendarConnected || isConnecting) return;
-    
-    if (!isConfigured) {
-      toast({
-        title: "Configuration Required",
-        description: "Please set your Google OAuth client ID first.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    console.log("Calendar connection initiated");
-    setIsConnecting(true);
+  // Connect to Google Calendar
+  const connectCalendar = async (newClientId: string) => {
+    setIsLoading(true);
+    setError(null);
     
     try {
-      const success = await googleCalendarApi.signIn();
+      // Save client ID
+      localStorage.setItem('googleCalendarClientId', newClientId);
+      setClientId(newClientId);
       
-      if (success) {
-        setCalendarConnected(true);
-        toast({
-          title: "Calendar Connected",
-          description: "Your Google Calendar has been successfully connected.",
-        });
-        
-        // Fetch events after successful connection
-        await refreshEvents();
-      } else {
-        // Failed to connect - the toast is already shown in the API
-        console.log("Connection returned false");
-      }
-    } catch (error) {
-      console.error("Calendar connection failed with exception:", error);
+      // Get authorization URL
+      const authUrl = await googleCalendarApi.getAuthUrl(newClientId);
       
-      toast({
-        title: "Connection Failed",
-        description: "Could not connect to Google Calendar. Please check your client ID.",
-        variant: "destructive",
-      });
+      // Redirect to auth URL
+      window.location.href = authUrl;
+    } catch (err) {
+      console.error('Error connecting to calendar:', err);
+      setError('Failed to connect to Google Calendar. Please check your client ID and try again.');
+      setIsConnected(false);
     } finally {
-      setIsConnecting(false);
+      setIsLoading(false);
     }
   };
 
-  const disconnectCalendar = async () => {
-    if (!calendarConnected) return;
-    
-    console.log("Calendar disconnection initiated");
+  // Disconnect from Google Calendar
+  const disconnectCalendar = () => {
+    setIsLoading(true);
     
     try {
-      await googleCalendarApi.signOut();
-      
-      setCalendarConnected(false);
+      // Clear storage
+      googleCalendarApi.signOut();
+      setIsConnected(false);
       setEvents([]);
-      
-      toast({
-        title: "Calendar Disconnected",
-        description: "Your Google Calendar has been disconnected.",
-      });
-    } catch (error) {
-      console.error("Calendar disconnection failed:", error);
-      
-      toast({
-        title: "Disconnection Failed",
-        description: "Could not disconnect from Google Calendar.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const refreshEvents = async () => {
-    if (!calendarConnected) return;
-    
-    try {
-      const upcomingEvents = await googleCalendarApi.getUpcomingEvents();
-      setEvents(upcomingEvents);
-    } catch (error) {
-      console.error("Failed to refresh calendar events:", error);
+      setError(null);
+    } catch (err) {
+      console.error('Error disconnecting from calendar:', err);
+      setError('Failed to disconnect from Google Calendar.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Return the provider
+  // Fetch calendar events
+  const fetchEvents = async (startDate?: Date, endDate?: Date) => {
+    if (!isConnected) {
+      setError('Calendar is not connected.');
+      return [];
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const calendarEvents = await googleCalendarApi.listEvents(startDate, endDate);
+      setEvents(calendarEvents);
+      return calendarEvents;
+    } catch (err) {
+      console.error('Error fetching events:', err);
+      setError('Failed to fetch calendar events.');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const value = {
+    isConnected,
+    clientId,
+    events,
+    isLoading,
+    error,
+    connectCalendar,
+    disconnectCalendar,
+    fetchEvents
+  };
+
   return (
-    <CalendarContext.Provider value={{ 
-      calendarConnected, 
-      isConnecting,
-      isConfigured,
-      connectCalendar,
-      disconnectCalendar,
-      updateClientId,
-      updateClientSecret,
-      events,
-      refreshEvents
-    }}>
+    <CalendarContext.Provider value={value}>
       {children}
     </CalendarContext.Provider>
   );
-}
+};
