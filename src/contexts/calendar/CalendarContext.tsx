@@ -87,10 +87,10 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
   };
 
   // Fetch calendar events
-  const refreshEvents = async () => {
+  const refreshEvents = async (): Promise<void> => {
     if (!calendarConnected) {
       setError('Calendar is not connected.');
-      return [];
+      return;
     }
     
     setIsLoading(true);
@@ -99,11 +99,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     try {
       const calendarEvents = await googleCalendarApi.getUpcomingEvents(10);
       setEvents(calendarEvents);
-      return calendarEvents;
     } catch (err) {
       console.error('Error fetching events:', err);
       setError('Failed to fetch calendar events.');
-      return [];
     } finally {
       setIsLoading(false);
     }
