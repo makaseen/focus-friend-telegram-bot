@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { googleCalendarApi } from '@/utils/googleCalendar';
@@ -36,7 +37,8 @@ const AuthCallback: React.FC = () => {
             state = routeParams.state;
           } else {
             // If not in URL params, try to get it from query string
-            state = location.search.substring(1); // Remove the ? from the search params
+            const urlParams = new URLSearchParams(location.search);
+            state = urlParams.get('state') || '';
           }
           
           console.log('Using state:', state);

@@ -250,12 +250,20 @@ app.get('/auth/google', (req, res) => {
   res.redirect(redirectUrl);
 });
 
-// OAuth callback endpoint
+// OAuth callback endpoint with better error handling
 app.get('/auth/callback', (req, res) => {
-  console.log('Received request to /auth/callback endpoint');
+  console.log('Received request to /auth/callback endpoint with query:', req.query);
   
-  // Just redirect to the SPA to handle the callback
+  // Make sure we have all required parameters for the SPA callback
   const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+  
+  // Check if we have state parameter (required)
+  if (!req.query.state) {
+    console.error('No state parameter in /auth/callback endpoint');
+    return res.status(400).send('Error: Missing state parameter in callback');
+  }
+  
+  // Redirect to the SPA to handle the callback
   const redirectUrl = `/auth/callback?${queryString}`;
   
   console.log(`Redirecting to SPA callback handler: ${redirectUrl}`);

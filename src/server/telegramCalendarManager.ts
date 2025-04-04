@@ -54,8 +54,8 @@ export class TelegramCalendarManager {
       baseUrl = baseUrl + '/';
     }
     
-    // Change the URL structure to match our route configuration
-    return `${baseUrl}auth/callback?state=${state}`;
+    // Fix the URL structure to match our route configuration
+    return `${baseUrl}auth/google?state=${state}`;
   }
   
   // Process OAuth callback and store the token
