@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
-import { googleCalendarApi } from "@/utils/googleCalendarApi";
+import { googleCalendarApi } from "@/utils/googleCalendar";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { CalendarIcon } from "lucide-react";
 

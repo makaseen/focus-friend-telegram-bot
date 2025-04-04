@@ -49,6 +49,12 @@ interface Window {
               getId: () => string;
               getName: () => string;
               getEmail: () => string;
+            },
+            getAuthResponse: (includeAuthorizationData?: boolean) => {
+              access_token: string;
+              expires_in: number;
+              scope: string;
+              token_type: string;
             }
           }
         };
