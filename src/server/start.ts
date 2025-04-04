@@ -1,5 +1,5 @@
 
-import { startBot } from './telegramBot';
+import { startBot, startServer } from './telegramBot';
 import { config } from './config';
 
 console.log('---------------------------------------');
@@ -15,7 +15,24 @@ console.log('---------------------------------------');
 const isMainModule = require.main === module;
 
 if (isMainModule) {
-  // The server startup is now handled in telegramBot.ts
-  console.log('✅ start.ts is the main module - server startup is handled in telegramBot.ts');
-  console.log('---------------------------------------');
+  console.log('✅ Starting Telegram bot server...');
+  
+  // First start the server
+  const server = startServer();
+  
+  // Then start the bot if server was initialized properly
+  if (server) {
+    startBot()
+      .then((success) => {
+        if (success) {
+          console.log('🎉 Server and bot started successfully!');
+        } else {
+          console.error('❌ Bot failed to start, but server is running.');
+        }
+      })
+      .catch((error) => {
+        console.error('❌ Error during bot startup:', error);
+      });
+  }
 }
+

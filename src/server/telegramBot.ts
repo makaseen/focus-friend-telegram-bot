@@ -1,5 +1,5 @@
 
-import { Telegraf, Context } from 'telegraf';
+import { Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
 import express from 'express';
 import cors from 'cors';
@@ -182,7 +182,6 @@ bot.on(message('text'), async (ctx) => {
   }
 });
 
-// Function to start the bot - REMOVED first declaration of startBot here and kept only one implementation
 // Express server endpoints
 
 // Health check endpoint with more detailed info
@@ -244,7 +243,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
-// Start the server with better error handling
+// Start the server function
 const startServer = () => {
   const PORT = config.port;
   
@@ -272,7 +271,7 @@ const startServer = () => {
   }
 };
 
-// Single implementation of startBot function with better error handling
+// Bot startup function
 const startBot = async () => {
   console.log('🤖 Starting Telegram bot...');
   
@@ -327,36 +326,6 @@ const startBot = async () => {
   }
 };
 
-// Start the server first, then the bot
-const server = startServer();
+// Export bot and app for use in other modules
+export { bot, app, startBot, startServer };
 
-// Fix: Check if server is properly initialized before proceeding with bot startup
-// Modified to avoid the void type truthiness check
-if (server !== undefined) {
-  startBot()
-    .then((success) => {
-      if (success) {
-        console.log('🎉 Server and bot started successfully!');
-      } else {
-        console.error('❌ Bot failed to start, but server is running.');
-      }
-    })
-    .catch((error) => {
-      console.error('❌ Error during bot startup:', error);
-    });
-}
-
-// Enable graceful stop
-process.once('SIGINT', () => {
-  console.log('SIGINT received. Shutting down gracefully...');
-  bot.stop('SIGINT');
-  if (server) server.close();
-});
-
-process.once('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  bot.stop('SIGTERM');
-  if (server) server.close();
-});
-
-export { bot, app, startBot };
