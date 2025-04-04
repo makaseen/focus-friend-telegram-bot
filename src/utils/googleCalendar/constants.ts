@@ -17,3 +17,6 @@ export const PRIMARY_CALENDAR_ID = 'primary';
 
 // API endpoints
 export const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
+
+// Time constraints
+export const MAX_TIME_RANGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds

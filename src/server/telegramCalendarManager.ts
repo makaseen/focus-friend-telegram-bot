@@ -2,6 +2,7 @@
 import { Context } from 'telegraf';
 import { googleCalendarApi } from '../utils/googleCalendar/index.js';
 import { CalendarEvent, TokenResponse } from '../utils/googleCalendar/types.js';
+import { MAX_TIME_RANGE_MS } from '../utils/googleCalendar/constants.js';
 
 interface UserCalendarToken extends TokenResponse {
   userId: number;
@@ -94,7 +95,10 @@ export class TelegramCalendarManager {
     const nextWeek = new Date(now);
     nextWeek.setDate(nextWeek.getDate() + 7);
     
-    // Mock events
+    // Limit to one month from now
+    const oneMonthFromNow = new Date(now.getTime() + MAX_TIME_RANGE_MS);
+    
+    // Mock events - ensure none are beyond the one month window
     return [
       {
         id: '1',
@@ -123,10 +127,10 @@ export class TelegramCalendarManager {
         summary: 'Weekly Review',
         description: 'Review progress and plan next week',
         start: {
-          dateTime: nextWeek.toISOString(),
+          dateTime: new Date(Math.min(nextWeek.getTime(), oneMonthFromNow.getTime())).toISOString(),
         },
         end: {
-          dateTime: nextWeek.toISOString(),
+          dateTime: new Date(Math.min(nextWeek.getTime(), oneMonthFromNow.getTime())).toISOString(),
         }
       }
     ];

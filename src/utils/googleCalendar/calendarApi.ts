@@ -2,7 +2,7 @@
 import { TokenResponse, CalendarEventListParams } from './types';
 import { loadGoogleApi } from './apiLoader';
 import { getClientCredentials, handleApiError } from './utils';
-import { SCOPES, STORAGE_KEYS, PRIMARY_CALENDAR_ID } from './constants';
+import { SCOPES, STORAGE_KEYS, PRIMARY_CALENDAR_ID, MAX_TIME_RANGE_MS } from './constants';
 import { toast } from "@/hooks/use-toast";
 
 class GoogleCalendarApi {
@@ -284,11 +284,16 @@ class GoogleCalendarApi {
         access_token: this.token!.access_token
       });
       
+      // Calculate time range - current time to 1 month from now
+      const now = new Date();
+      const oneMonthFromNow = new Date(now.getTime() + MAX_TIME_RANGE_MS);
+      
       // Enable better error handling for the Calendar API request
       try {
         const response = await window.gapi.client.calendar.events.list({
           'calendarId': PRIMARY_CALENDAR_ID,
-          'timeMin': new Date().toISOString(),
+          'timeMin': now.toISOString(),
+          'timeMax': oneMonthFromNow.toISOString(),
           'showDeleted': false,
           'singleEvents': true,
           'maxResults': maxResults,
