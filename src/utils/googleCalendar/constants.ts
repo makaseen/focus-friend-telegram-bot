@@ -1,14 +1,19 @@
 
-// Google Calendar API scopes needed for our application
-// Explicitly requesting read-only access to Calendar
+// Calendar API constants
+
+// OAuth scopes needed for calendar read functionality
 export const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly';
 
-// Default calendar ID for primary calendar
-export const PRIMARY_CALENDAR_ID = 'primary';
-
-// LocalStorage keys
+// Storage keys for persisting auth data
 export const STORAGE_KEYS = {
   TOKEN: 'googleCalendarToken',
   CLIENT_ID: 'googleCalendarClientId',
-  CLIENT_SECRET: 'googleCalendarClientSecret'
+  CLIENT_SECRET: 'googleCalendarClientSecret',
+  CONNECTION_STATUS: 'googleCalendarConnected'
 };
+
+// Calendar IDs
+export const PRIMARY_CALENDAR_ID = 'primary';
+
+// API endpoints
+export const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';

@@ -1,8 +1,7 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { BotMessage, UserMessage } from './ChatBubble';
 import { BrainIcon, SendIcon } from './ChatIcons';
-import { useCalendar } from "@/contexts/CalendarContext";
+import { useCalendar } from "@/hooks/useCalendarContext";
 import { formatDistance } from 'date-fns';
 import { toast } from "@/hooks/use-toast";
 
@@ -24,26 +23,22 @@ const ChatInterface = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Refresh calendar events when component mounts
+  // Refresh calendar events when component mounts if calendar is connected
   useEffect(() => {
-    // Only attempt to refresh events if calendar is actually connected
-    if (calendarConnected) {
-      console.log("Chat interface: Calendar connected, refreshing events");
-      try {
-        refreshEvents();
-      } catch (err) {
-        console.error("Error refreshing events in chat interface:", err);
-        if (err instanceof Error) {
-          toast({
-            title: "Calendar Error",
-            description: err.message,
-            variant: "destructive"
-          });
+    const loadEvents = async () => {
+      if (calendarConnected) {
+        console.log("Chat interface: Calendar connected, refreshing events");
+        try {
+          await refreshEvents();
+        } catch (err) {
+          console.error("Error refreshing events in chat interface:", err);
         }
+      } else {
+        console.log("Chat interface: Calendar not connected, skipping event refresh");
       }
-    } else {
-      console.log("Chat interface: Calendar not connected, skipping event refresh");
-    }
+    };
+    
+    loadEvents();
   }, [calendarConnected, refreshEvents]);
 
   // Handle Enter key press

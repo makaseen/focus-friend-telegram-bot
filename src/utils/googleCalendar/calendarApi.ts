@@ -24,16 +24,21 @@ class GoogleCalendarApi {
         if (parsedToken.expiry_date && parsedToken.expiry_date > Date.now()) {
           this.token = parsedToken;
           console.log("Loaded valid token from storage:", !!parsedToken.access_token);
+          
+          // Store connection status in localStorage
+          localStorage.setItem(STORAGE_KEYS.CONNECTION_STATUS, 'true');
           return true;
         } else {
           console.log("Found expired token in storage, removing");
           localStorage.removeItem(STORAGE_KEYS.TOKEN);
+          localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
           this.token = null;
         }
       }
     } catch (error) {
       console.error('Failed to parse saved token', error);
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
       this.token = null;
     }
     return false;
@@ -81,11 +86,10 @@ class GoogleCalendarApi {
     
     const { clientId } = getClientCredentials();
     
-    console.log("Initializing Google Identity token client");
+    console.log("Initializing Google Identity token client with scopes:", SCOPES);
     
     return window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      // Important: Explicitly request Calendar scope with read-only access
       scope: SCOPES,
       callback: (tokenResponse: any) => {
         if (tokenResponse && tokenResponse.access_token) {
@@ -118,6 +122,9 @@ class GoogleCalendarApi {
     
     // Store token in localStorage - crucial for persistence
     localStorage.setItem(STORAGE_KEYS.TOKEN, JSON.stringify(this.token));
+    
+    // Also store connection status
+    localStorage.setItem(STORAGE_KEYS.CONNECTION_STATUS, 'true');
     
     console.log("Token successfully saved to localStorage");
     toast({
@@ -246,6 +253,10 @@ class GoogleCalendarApi {
     
     const isAuth = !!this.token && !!this.token.access_token && !!this.token.expiry_date && this.token.expiry_date > Date.now();
     console.log("Authentication check:", isAuth, "Token exists:", !!this.token);
+    
+    // Update localStorage connection status based on auth check
+    localStorage.setItem(STORAGE_KEYS.CONNECTION_STATUS, isAuth ? 'true' : 'false');
+    
     return isAuth;
   }
 
@@ -259,7 +270,7 @@ class GoogleCalendarApi {
     }
     
     // Double-check authentication after trying to load token
-    if (!this.token || !this.token.access_token) {
+    if (!this.isAuthenticated()) {
       console.error('Not authenticated with Google Calendar');
       throw new Error('Not authenticated with Google Calendar');
     }
@@ -300,6 +311,7 @@ class GoogleCalendarApi {
           // Clear token to force re-authentication
           this.token = null;
           localStorage.removeItem(STORAGE_KEYS.TOKEN);
+          localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
         } else {
           // Forward other errors to the general error handler
           throw apiError;
@@ -317,6 +329,7 @@ class GoogleCalendarApi {
         console.log("Authentication error detected, clearing token");
         this.token = null;
         localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.CONNECTION_STATUS);
       }
       
       handleApiError(error, "Failed to Load Events");

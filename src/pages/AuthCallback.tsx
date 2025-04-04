@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { googleCalendarApi } from '@/utils/googleCalendar';
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { getOAuthErrorMessage } from '@/utils/googleCalendar/utils';
+import { SCOPES } from '@/utils/googleCalendar/constants';
 
 const AuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
@@ -60,7 +62,8 @@ const AuthCallback: React.FC = () => {
           // Define redirect URI - make sure this matches exactly what's configured in Google Cloud Console
           const redirectUri = `${window.location.origin}/auth/callback`;
           
-          const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly&response_type=code&state=${state}&access_type=offline&prompt=consent`;
+          // Ensure we're requesting the proper scopes
+          const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(SCOPES)}&response_type=code&state=${state}&access_type=offline&prompt=consent`;
           
           console.log('Redirecting to Google OAuth URL:', authUrl);
           window.location.href = authUrl;
