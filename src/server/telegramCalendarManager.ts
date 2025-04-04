@@ -3,6 +3,7 @@ import { Context } from 'telegraf';
 import { googleCalendarApi } from '../utils/googleCalendar/index.js';
 import { CalendarEvent, TokenResponse } from '../utils/googleCalendar/types.js';
 import { MAX_TIME_RANGE_MS } from '../utils/googleCalendar/constants.js';
+import { config } from './config.js';
 
 interface UserCalendarToken extends TokenResponse {
   userId: number;
@@ -38,8 +39,22 @@ export class TelegramCalendarManager {
   // Get the authorization URL for a user
   getAuthUrl(userId: number): string {
     const state = this.generateOAuthState(userId);
-    // Use /auth/google for consistency with the frontend routes
-    return `${process.env.API_BASE_URL || 'https://focus-friend-telegram-bot.lovable.app'}/auth/google?state=${state}`;
+    
+    // Use config.apiBaseUrl instead of directly accessing process.env
+    // Ensure the URL starts with http:// or https://
+    let baseUrl = config.apiBaseUrl;
+    
+    // If apiBaseUrl is not set or invalid, use a default
+    if (!baseUrl || !baseUrl.startsWith('http')) {
+      baseUrl = 'https://focus-friend-telegram-bot.lovable.app';
+    }
+    
+    // Ensure we have a properly formatted URL
+    if (!baseUrl.endsWith('/')) {
+      baseUrl = baseUrl + '/';
+    }
+    
+    return `${baseUrl}auth/google?state=${state}`;
   }
   
   // Process OAuth callback and store the token
@@ -163,3 +178,4 @@ export class TelegramCalendarManager {
     ];
   }
 }
+

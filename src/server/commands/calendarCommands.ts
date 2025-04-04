@@ -1,8 +1,8 @@
-
 import { Context } from 'telegraf';
 import { formatDistance } from 'date-fns';
 import { TelegramCalendarManager } from '../telegramCalendarManager';
 import { UserSession } from '../sessionManager';
+import { config } from '../config';
 
 export async function handleCalendarCommand(
   ctx: Context, 
@@ -15,22 +15,34 @@ export async function handleCalendarCommand(
     return;
   }
   
-  const authUrl = calendarManager.getAuthUrl(userId);
-  
-  await ctx.reply(
-    "To connect your Google Calendar, please click the link below and follow the authentication process. This will allow me to access your calendar events and provide you with personalized scheduling assistance.\n\n" +
-    "Based on neuroscience research, externalizing your schedule reduces cognitive load and improves executive function.",
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "Connect Google Calendar", url: authUrl }]
-        ]
-      }
+  try {
+    const authUrl = calendarManager.getAuthUrl(userId);
+    
+    // Validate URL before sending it
+    if (!authUrl.startsWith('http')) {
+      console.error(`Invalid URL generated: ${authUrl}`);
+      await ctx.reply("Sorry, I couldn't generate a valid authentication URL. Please try again later or contact support.");
+      return;
     }
-  );
-  
-  if (userSessions[userId]) {
-    userSessions[userId].state = 'awaiting_calendar_auth';
+    
+    await ctx.reply(
+      "To connect your Google Calendar, please click the link below and follow the authentication process. This will allow me to access your calendar events and provide you with personalized scheduling assistance.\n\n" +
+      "Based on neuroscience research, externalizing your schedule reduces cognitive load and improves executive function.",
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "Connect Google Calendar", url: authUrl }]
+          ]
+        }
+      }
+    );
+    
+    if (userSessions[userId]) {
+      userSessions[userId].state = 'awaiting_calendar_auth';
+    }
+  } catch (error) {
+    console.error(`Error generating auth URL for user ${userId}:`, error);
+    await ctx.reply("Sorry, I encountered an error while setting up Google Calendar authentication. Please try again later.");
   }
 }
 
