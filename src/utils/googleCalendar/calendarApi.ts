@@ -1,82 +1,75 @@
 
 import { tokenManager } from './tokenManager';
-import { authHandler } from './authHandler';
-import { eventsHandler } from './eventsHandler';
-import { toast } from "@/hooks/use-toast";
+import { eventsHandler } from './events'; 
+import { authHandler } from './auth';
 
 /**
- * Main Google Calendar API wrapper class
- * Acts as a facade for the different specialized handlers
+ * Main Calendar API facade
+ * Provides a simplified interface to the Google Calendar integration
  */
-class GoogleCalendarApi {
-  /**
-   * Check if client ID is set
-   */
-  isConfigured(): boolean {
-    return authHandler.isConfigured();
-  }
-
-  /**
-   * Update client ID
-   */
-  setClientId(clientId: string): void {
-    authHandler.setClientId(clientId);
-  }
-  
-  /**
-   * Update client secret
-   */
-  setClientSecret(clientSecret: string): void {
-    authHandler.setClientSecret(clientSecret);
-  }
-
+export class GoogleCalendarApi {
   /**
    * Load token from storage
    */
-  loadTokenFromStorage(): boolean {
+  loadTokenFromStorage() {
     return tokenManager.loadTokenFromStorage();
   }
   
   /**
-   * Handle the Google Sign In process
+   * Check if user is authenticated
    */
-  async signIn(): Promise<boolean> {
+  isAuthenticated() {
+    return tokenManager.isAuthenticated();
+  }
+  
+  /**
+   * Check if API is configured with client ID
+   */
+  isConfigured() {
+    return authHandler.isConfigured();
+  }
+  
+  /**
+   * Set client ID for authentication
+   */
+  setClientId(clientId: string) {
+    authHandler.setClientId(clientId);
+  }
+  
+  /**
+   * Set client secret for authentication (if needed)
+   */
+  setClientSecret(clientSecret: string) {
+    authHandler.setClientSecret(clientSecret);
+  }
+  
+  /**
+   * Initiate sign in flow
+   */
+  async signIn() {
     return authHandler.signIn();
   }
-
+  
   /**
    * Handle authorization code from redirect
    */
-  async handleAuthCode(code: string): Promise<boolean> {
+  async handleAuthCode(code: string) {
     return authHandler.handleAuthCode(code);
   }
-
+  
   /**
-   * Sign out from Google
+   * Sign out and clear token
    */
-  async signOut(): Promise<boolean> {
+  async signOut() {
     return authHandler.signOut();
   }
-
+  
   /**
-   * Check if user is currently authenticated
+   * Get upcoming calendar events
    */
-  isAuthenticated(): boolean {
-    return tokenManager.isAuthenticated();
-  }
-
-  /**
-   * Fetch upcoming events from calendar
-   */
-  async getUpcomingEvents(maxResults = 10): Promise<any[]> {
-    try {
-      return await eventsHandler.getUpcomingEvents(maxResults);
-    } catch (error) {
-      // This re-throw is important for proper error handling in consumer components
-      throw error;
-    }
+  async getUpcomingEvents(maxResults = 10) {
+    return eventsHandler.getUpcomingEvents(maxResults);
   }
 }
 
-// Export a singleton instance
 export const googleCalendarApi = new GoogleCalendarApi();

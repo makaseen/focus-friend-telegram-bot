@@ -5,6 +5,7 @@ import { tokenManager } from '../tokenManager';
 import { toast } from "@/hooks/use-toast";
 import { credentialsManager } from './credentialsManager';
 import { tokenClientManager } from './tokenClient';
+import { SCOPES } from '../constants';
 
 /**
  * Handles the core authentication flow logic

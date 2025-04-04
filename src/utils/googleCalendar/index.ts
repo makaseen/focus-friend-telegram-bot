@@ -6,5 +6,4 @@ export * from './apiLoader';
 export { googleCalendarApi } from './calendarApi';
 export { tokenManager } from './tokenManager';
 export { authHandler } from './auth';
-export { eventsHandler } from './eventsHandler';
-
+export { eventsHandler } from './events';
