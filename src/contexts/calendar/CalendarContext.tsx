@@ -1,15 +1,11 @@
 
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { googleCalendarApi } from '@/utils/googleCalendar';
-import { getSavedConnectionStatus } from './utils';
+import { getSavedConnectionStatus, saveConnectionStatus } from './utils';
 import { CalendarContextType } from './types';
 import { toast } from '@/hooks/use-toast';
 
 export const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
-
-type CalendarProviderProps = {
-  children: ReactNode;
-};
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) => {
   const [calendarConnected, setCalendarConnected] = useState<boolean>(false);
@@ -43,28 +39,34 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       }
     };
     
-    // Check on mount
-    checkConnectionStatus();
-    
-    // Load client ID from storage if available
+    // Load client ID from storage
     const savedClientId = localStorage.getItem('googleCalendarClientId') || '';
     setClientId(savedClientId);
     
-    // Also check when URL changes (could be returning from auth)
-    window.addEventListener('popstate', checkConnectionStatus);
+    // Set up listeners for URL changes
+    const setupUrlChangeListeners = () => {
+      // Check on mount
+      checkConnectionStatus();
+      
+      // Also check when URL changes (could be returning from auth)
+      window.addEventListener('popstate', checkConnectionStatus);
+      
+      // Check on location hash change (for OAuth2 redirects)
+      window.addEventListener('hashchange', handleHashChange);
+      
+      return () => {
+        window.removeEventListener('popstate', checkConnectionStatus);
+        window.removeEventListener('hashchange', handleHashChange);
+      };
+    };
     
-    // Check on location hash change (for OAuth2 redirects)
+    // Handler for hash changes
     const handleHashChange = () => {
       console.log("Hash changed, checking connection status");
       checkConnectionStatus();
     };
     
-    window.addEventListener('hashchange', handleHashChange);
-    
-    return () => {
-      window.removeEventListener('popstate', checkConnectionStatus);
-      window.removeEventListener('hashchange', handleHashChange);
-    };
+    return setupUrlChangeListeners();
   }, []);
 
   // Connect to Google Calendar
@@ -78,16 +80,19 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       
       if (success) {
         setCalendarConnected(true);
+        saveConnectionStatus(true);
         // Fetch events after successful connection
         await refreshEvents();
       } else {
         setCalendarConnected(false);
+        saveConnectionStatus(false);
         setError('Failed to connect to Google Calendar.');
       }
     } catch (err) {
       console.error('Error connecting to calendar:', err);
       setError('Failed to connect to Google Calendar. Please check your client ID and try again.');
       setCalendarConnected(false);
+      saveConnectionStatus(false);
     } finally {
       setIsConnecting(false);
     }
@@ -101,6 +106,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       // Clear storage
       googleCalendarApi.signOut();
       setCalendarConnected(false);
+      saveConnectionStatus(false);
       setEvents([]);
       setError(null);
     } catch (err) {
@@ -131,6 +137,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
     if (!googleCalendarApi.isAuthenticated()) {
       console.warn('Attempted to fetch events but calendar is not connected.');
       setCalendarConnected(false);
+      saveConnectionStatus(false);
       return;
     }
     
@@ -145,6 +152,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       
       // If we successfully got events, ensure connection state is true
       setCalendarConnected(true);
+      saveConnectionStatus(true);
     } catch (err) {
       console.error('Error fetching events:', err);
       toast({
@@ -155,6 +163,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({ children }) 
       // If we get auth errors, reset the connection state
       if (err instanceof Error && err.message.includes('Not authenticated')) {
         setCalendarConnected(false);
+        saveConnectionStatus(false);
       }
     } finally {
       setIsLoading(false);
