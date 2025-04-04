@@ -20,12 +20,18 @@ const App = () => (
           <Sonner />
           <Routes>
             <Route path="/" element={<Index />} />
-            {/* Handle all auth callback patterns */}
+            
+            {/* OAuth routes - make them all use the AuthCallback component */}
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/auth/google" element={<AuthCallback />} />
+            
+            {/* Additional OAuth routes for Telegram bot integration */}
             <Route path="/auth/google/:state" element={<AuthCallback />} />
-            {/* Catch-all wildcard route for /auth/google with query parameters */}
+            
+            {/* Catch-all for auth paths */}
             <Route path="/auth/*" element={<AuthCallback />} />
+            
+            {/* Default 404 route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </CalendarProvider>

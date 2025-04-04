@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { googleCalendarApi } from '@/utils/googleCalendar';
@@ -23,7 +22,7 @@ const AuthCallback: React.FC = () => {
     const processAuth = async () => {
       try {
         // Check if this is the initial auth request or the callback
-        const isInitialAuth = location.pathname.startsWith('/auth/google');
+        const isInitialAuth = location.pathname === '/auth/google';
         const isCallback = location.pathname === '/auth/callback';
         
         console.log('Auth type:', { isInitialAuth, isCallback });
@@ -52,7 +51,7 @@ const AuthCallback: React.FC = () => {
         
         console.log('Using state:', state);
         
-        if (isInitialAuth && !isCallback) {
+        if (isInitialAuth) {
           console.log('Initial auth request, redirecting to Google...');
           
           // Get the client ID from localStorage

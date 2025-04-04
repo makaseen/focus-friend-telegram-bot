@@ -231,7 +231,7 @@ app.get('/env-check', (req, res) => {
   res.status(200).json(envInfo);
 });
 
-// Add Google OAuth routes with improved error handling
+// Update Google OAuth routes with improved frontend redirection
 app.get('/auth/google', (req, res) => {
   console.log('Received request to /auth/google endpoint with query:', req.query);
   
@@ -243,18 +243,31 @@ app.get('/auth/google', (req, res) => {
     return res.status(400).send('Error: No state parameter provided');
   }
   
-  // Construct SPA URL for handling auth - preserve all query parameters
-  const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
-  const redirectUrl = `/auth/google?${queryString}`;
+  // Determine frontend URL - in production this would come from config
+  // For development, we'll use port 8080 (which is the default Vite dev server port)
+  const frontendUrl = process.env.NODE_ENV === 'production' 
+    ? config.apiBaseUrl 
+    : 'http://localhost:8080';
+    
+  console.log(`Redirecting to frontend auth handler at ${frontendUrl}`);
   
-  console.log(`Redirecting to SPA auth handler: ${redirectUrl}`);
+  // Construct frontend URL for handling auth - preserve all query parameters
+  const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+  const redirectUrl = `${frontendUrl}/auth/google?${queryString}`;
+  
+  console.log(`Redirecting to: ${redirectUrl}`);
   res.redirect(redirectUrl);
 });
 
-// OAuth callback endpoint with better error handling
+// OAuth callback endpoint with better error handling and frontend redirection
 app.get('/auth/callback', (req, res) => {
   console.log('Received request to /auth/callback endpoint with query:', req.query);
   
+  // Determine frontend URL
+  const frontendUrl = process.env.NODE_ENV === 'production' 
+    ? config.apiBaseUrl 
+    : 'http://localhost:8080';
+    
   // Make sure we have all required parameters for the SPA callback
   const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
   
@@ -264,10 +277,10 @@ app.get('/auth/callback', (req, res) => {
     return res.status(400).send('Error: Missing state parameter in callback');
   }
   
-  // Redirect to the SPA to handle the callback
-  const redirectUrl = `/auth/callback?${queryString}`;
+  // Redirect to the frontend SPA to handle the callback
+  const redirectUrl = `${frontendUrl}/auth/callback?${queryString}`;
   
-  console.log(`Redirecting to SPA callback handler: ${redirectUrl}`);
+  console.log(`Redirecting to frontend callback handler: ${redirectUrl}`);
   res.redirect(redirectUrl);
 });
 
@@ -275,14 +288,19 @@ app.get('/auth/callback', (req, res) => {
 app.get('/auth/*', (req, res) => {
   console.log('Received request to wildcard auth endpoint:', req.path, 'with query:', req.query);
   
-  // Get the original path without the leading slash
+  // Determine frontend URL
+  const frontendUrl = process.env.NODE_ENV === 'production' 
+    ? config.apiBaseUrl 
+    : 'http://localhost:8080';
+    
+  // Get the original path
   const originalPath = req.path;
   
   // Make a query string from all parameters
   const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
-  const redirectPath = queryString ? `${originalPath}?${queryString}` : originalPath;
+  const redirectPath = queryString ? `${frontendUrl}${originalPath}?${queryString}` : `${frontendUrl}${originalPath}`;
   
-  console.log(`Redirecting to SPA path: ${redirectPath}`);
+  console.log(`Redirecting to frontend path: ${redirectPath}`);
   res.redirect(redirectPath);
 });
 

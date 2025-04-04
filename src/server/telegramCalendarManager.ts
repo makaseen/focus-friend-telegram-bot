@@ -41,12 +41,20 @@ export class TelegramCalendarManager {
     const state = this.generateOAuthState(userId);
     
     // Use config.apiBaseUrl instead of directly accessing process.env
-    // Ensure the URL starts with http:// or https://
-    let baseUrl = config.apiBaseUrl;
+    // For local development, we use the bot server's URL
+    let baseUrl;
     
-    // If apiBaseUrl is not set or invalid, use a default
-    if (!baseUrl || !baseUrl.startsWith('http')) {
-      baseUrl = 'https://focus-friend-telegram-bot.lovable.app';
+    // In development, always use the local bot server URL (port 3001)
+    if (process.env.NODE_ENV !== 'production') {
+      baseUrl = 'http://localhost:3001';
+    } else {
+      // Use the configured apiBaseUrl for production
+      baseUrl = config.apiBaseUrl;
+      
+      // If apiBaseUrl is not set or invalid, use a default
+      if (!baseUrl || !baseUrl.startsWith('http')) {
+        baseUrl = 'https://focus-friend-telegram-bot.lovable.app';
+      }
     }
     
     // Ensure we have a properly formatted URL
@@ -54,7 +62,7 @@ export class TelegramCalendarManager {
       baseUrl = baseUrl + '/';
     }
     
-    // Use the consistent auth endpoint that will be captured by our catch-all route
+    // Use the auth endpoint on the bot server that will redirect to the frontend
     return `${baseUrl}auth/google?state=${state}`;
   }
   
