@@ -243,12 +243,8 @@ app.get('/auth/google', (req, res) => {
     return res.status(400).send('Error: No state parameter provided');
   }
   
-  // Determine frontend URL - in production this would come from config
-  // For development, we'll use port 8080 (which is the default Vite dev server port)
-  const frontendUrl = process.env.NODE_ENV === 'production' 
-    ? config.apiBaseUrl 
-    : 'http://localhost:8080';
-    
+  // Always use the HTTPS staging URL for Telegram
+  const frontendUrl = config.stagingUrl;
   console.log(`Redirecting to frontend auth handler at ${frontendUrl}`);
   
   // Construct frontend URL for handling auth - preserve all query parameters
@@ -263,10 +259,8 @@ app.get('/auth/google', (req, res) => {
 app.get('/auth/callback', (req, res) => {
   console.log('Received request to /auth/callback endpoint with query:', req.query);
   
-  // Determine frontend URL
-  const frontendUrl = process.env.NODE_ENV === 'production' 
-    ? config.apiBaseUrl 
-    : 'http://localhost:8080';
+  // Always use the HTTPS staging URL for Telegram
+  const frontendUrl = config.stagingUrl;
     
   // Make sure we have all required parameters for the SPA callback
   const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
@@ -288,10 +282,8 @@ app.get('/auth/callback', (req, res) => {
 app.get('/auth/*', (req, res) => {
   console.log('Received request to wildcard auth endpoint:', req.path, 'with query:', req.query);
   
-  // Determine frontend URL
-  const frontendUrl = process.env.NODE_ENV === 'production' 
-    ? config.apiBaseUrl 
-    : 'http://localhost:8080';
+  // Always use the HTTPS staging URL for Telegram
+  const frontendUrl = config.stagingUrl;
     
   // Get the original path
   const originalPath = req.path;

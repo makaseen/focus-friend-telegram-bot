@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { googleCalendarApi } from '@/utils/googleCalendar';
@@ -6,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { getOAuthErrorMessage } from '@/utils/googleCalendar/utils';
 import { SCOPES } from '@/utils/googleCalendar/auth';
+import { config } from '@/server/config';
 
 const AuthCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
@@ -71,8 +73,12 @@ const AuthCallback: React.FC = () => {
           // Check if it's a Telegram bot request
           const isTelegramAuth = state?.includes('telegram-');
           
-          // Define redirect URI - make sure this matches exactly what's configured in Google Cloud Console
-          const redirectUri = `${window.location.origin}/auth/callback`;
+          // Define redirect URI based on current environment
+          // Always use the HTTPS stagingUrl for development
+          const baseUrl = config.stagingUrl;
+          const redirectUri = `${baseUrl}/auth/callback`;
+          
+          console.log('Using redirect URI:', redirectUri);
           
           // Ensure we're requesting the proper scopes
           const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(SCOPES)}&response_type=code&state=${state}&access_type=offline&prompt=consent`;
