@@ -27,10 +27,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Debug middleware to log all updates
+bot.use((ctx, next) => {
+  console.log(`[${new Date().toISOString()}] Received update from ${ctx.from?.username || ctx.from?.id || 'unknown'}:`, 
+    ctx.updateType);
+  return next();
+});
+
 // Bot welcome message
 bot.start(async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
+  
+  console.log(`User ${userId} started the bot`);
   
   // Initialize user session
   sessionManager.createSession(userId);
@@ -49,6 +58,7 @@ bot.start(async (ctx) => {
 
 // Help command
 bot.help((ctx) => {
+  console.log(`User ${ctx.from?.id} requested help`);
   ctx.reply(
     "Here's how I can help you:\n\n" +
     "/connect_calendar - Connect your Google Calendar\n" +
@@ -66,6 +76,7 @@ bot.command('connect_calendar', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
   
+  console.log(`User ${userId} requested calendar connection`);
   await handleCalendarCommand(ctx, userId, calendarManager, sessionManager.getAllSessions());
 });
 
@@ -74,6 +85,7 @@ bot.command('schedule', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
   
+  console.log(`User ${userId} requested schedule`);
   await handleScheduleCommand(ctx, userId, calendarManager, sessionManager.getAllSessions());
 });
 
@@ -82,21 +94,25 @@ bot.command('next', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
   
+  console.log(`User ${userId} requested next event`);
   await handleNextEventCommand(ctx, userId, calendarManager, sessionManager.getAllSessions());
 });
 
 // Focus techniques command
 bot.command('focus', async (ctx) => {
+  console.log(`User ${ctx.from?.id} requested focus techniques`);
   await handleFocusCommand(ctx);
 });
 
 // Break suggestion command
 bot.command('break', async (ctx) => {
+  console.log(`User ${ctx.from?.id} requested break suggestion`);
   await handleBreakCommand(ctx);
 });
 
 // Procrastination help command
 bot.command('procrastination', async (ctx) => {
+  console.log(`User ${ctx.from?.id} requested procrastination help`);
   await handleProcrastinationCommand(ctx);
 });
 
@@ -107,13 +123,8 @@ bot.on(message('text'), async (ctx) => {
   
   if (!userId || !messageText) return;
   
+  console.log(`User ${userId} sent message: ${messageText}`);
   await messageHandler.handleTextMessage(ctx, userId, messageText);
-});
-
-// Debug middleware to log all updates
-bot.use((ctx, next) => {
-  console.log('Received update:', JSON.stringify(ctx.update, null, 2));
-  return next();
 });
 
 // Set up webhook or polling based on configuration
@@ -150,8 +161,14 @@ if (config.useWebhook) {
     });
 } else {
   // Polling mode (development)
-  console.log('Starting bot in polling mode (development)...');
-  bot.launch()
+  console.log('Starting bot in polling mode...');
+  
+  // Make sure we're not using webhooks
+  bot.telegram.deleteWebhook()
+    .then(() => {
+      console.log('Webhook deleted successfully');
+      return bot.launch();
+    })
     .then(() => {
       console.log('Bot is running successfully in polling mode');
     })
