@@ -1,3 +1,4 @@
+
 import { loadGoogleApi } from './apiLoader';
 import { tokenManager } from './tokenManager';
 import { handleApiError } from './utils';
@@ -8,12 +9,33 @@ import { CalendarEventListParams, CalendarEvent } from './types';
  * Handles fetching events from Google Calendar API
  */
 export class EventsHandler {
+  // Track last refresh to prevent too many calls
+  private lastRefresh: number = 0;
+  private minRefreshInterval: number = 5000; // 5 seconds
+  
   /**
    * Fetch upcoming events from calendar with retry logic
    */
   async getUpcomingEvents(maxResults = 10): Promise<CalendarEvent[]> {
     console.log("Getting upcoming events, token status:", !!tokenManager.token?.access_token);
     
+    // Throttle refreshes to prevent too many calls
+    const now = Date.now();
+    if (now - this.lastRefresh < this.minRefreshInterval) {
+      console.log(`Refresh throttled. Last refresh was ${(now - this.lastRefresh) / 1000}s ago.`);
+      // If we have a valid token, try validating authentication anyway
+      if (tokenManager.isAuthenticated()) {
+        // Just re-validate without making the API call
+        try {
+          this.validateAuthentication();
+        } catch (error) {
+          console.error("Auth validation failed during throttled refresh:", error);
+          throw error;
+        }
+      }
+    }
+    
+    this.lastRefresh = now;
     this.validateAuthentication();
     
     try {
@@ -187,7 +209,7 @@ export class EventsHandler {
         // Check if this is a scope or permission issue
         if (apiError && 
             ((apiError.result && apiError.result.error && apiError.result.error.code === 403) || 
-             (apiError.status === 403))) {
+             (apiError.hasOwnProperty('status') && apiError.status === 403))) {
           console.error("Permission denied. This may be due to insufficient calendar scopes.");
           
           // Specific error for scope issues
