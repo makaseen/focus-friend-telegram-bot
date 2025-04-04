@@ -1,3 +1,4 @@
+
 import { Telegraf, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import express from 'express';
@@ -228,14 +229,44 @@ const startBot = async () => {
 };
 
 // Express server endpoints
+
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// New endpoint to check environment variables
+app.get('/env-check', (req, res) => {
+  // Create a safe copy of config with sensitive data masked
+  const safeConfig = {
+    telegramToken: config.telegramToken ? 
+      `${config.telegramToken.slice(0, 5)}...${config.telegramToken.slice(-5)}` : 'Not set',
+    webhookUrl: config.webhookUrl || 'Not set',
+    webhookSecret: config.webhookSecret ? '********' : 'Not set',
+    port: config.port,
+    apiBaseUrl: config.apiBaseUrl || 'Not set',
+    environment: config.environment,
+    useWebhook: config.useWebhook,
+    dotEnvLoaded: process.env.TELEGRAM_BOT_TOKEN ? 'Yes' : 'No',
+    nodeEnv: process.env.NODE_ENV || 'Not set'
+  };
+  
+  res.status(200).json({
+    message: 'Environment variables check',
+    config: safeConfig,
+    loadedFrom: '.env file status',
+    processEnvKeys: Object.keys(process.env).filter(key => 
+      !key.includes('SECRET') && 
+      !key.includes('TOKEN') && 
+      !key.includes('PASSWORD'))
+  });
 });
 
 // Start the server
 const PORT = config.port;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Visit http://localhost:${PORT}/env-check to verify environment variables`);
 });
 
 // Enable graceful stop
