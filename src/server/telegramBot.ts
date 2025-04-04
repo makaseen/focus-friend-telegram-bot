@@ -230,13 +230,26 @@ const startBot = async () => {
 
 // Express server endpoints
 
-// Health check endpoint
+// Health check endpoint with more detailed info
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+  const healthInfo = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development',
+    server: {
+      port: config.port,
+      address: `http://localhost:${config.port}`
+    },
+    dotenvLoaded: process.env.TELEGRAM_BOT_TOKEN ? true : false
+  };
+  
+  res.status(200).json(healthInfo);
 });
 
-// New endpoint to check environment variables
+// Environment variables check endpoint
 app.get('/env-check', (req, res) => {
+  console.log(`Received request to /env-check endpoint at ${new Date().toISOString()}`);
+  
   // Create a safe copy of config with sensitive data masked
   const safeConfig = {
     telegramToken: config.telegramToken ? 
@@ -251,7 +264,7 @@ app.get('/env-check', (req, res) => {
     nodeEnv: process.env.NODE_ENV || 'Not set'
   };
   
-  res.status(200).json({
+  const envInfo = {
     message: 'Environment variables check',
     config: safeConfig,
     loadedFrom: '.env file status',
@@ -259,18 +272,132 @@ app.get('/env-check', (req, res) => {
       !key.includes('SECRET') && 
       !key.includes('TOKEN') && 
       !key.includes('PASSWORD'))
-  });
+  };
+  
+  console.log('Responding to /env-check with:', JSON.stringify(envInfo, null, 2));
+  res.status(200).json(envInfo);
 });
 
-// Start the server
-const PORT = config.port;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Visit http://localhost:${PORT}/env-check to verify environment variables`);
+// Root endpoint to verify server is running
+app.get('/', (req, res) => {
+  res.status(200).send('Focus Friend Bot Server is running. Visit /health or /env-check for more information.');
 });
+
+// Error handler for express
+app.use((err, req, res, next) => {
+  console.error('Express error:', err);
+  res.status(500).json({ error: 'Internal Server Error', message: err.message });
+});
+
+// Start the server with better error handling
+const startServer = () => {
+  const PORT = config.port;
+  
+  try {
+    const server = app.listen(PORT, () => {
+      console.log(`✅ Server successfully started and running on port ${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/health`);
+      console.log(`🔍 Environment check: http://localhost:${PORT}/env-check`);
+      console.log(`🌐 Server root: http://localhost:${PORT}/`);
+    });
+    
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use. Please choose a different port or stop the other service.`);
+      } else {
+        console.error(`❌ Server error:`, error);
+      }
+      process.exit(1);
+    });
+    
+    return server;
+  } catch (error) {
+    console.error(`❌ Failed to start server:`, error);
+    process.exit(1);
+  }
+};
+
+// Modified startBot function for better error handling
+const startBot = async () => {
+  console.log('🤖 Starting Telegram bot...');
+  
+  try {
+    if (config.useWebhook) {
+      // Webhook mode
+      const webhookPath = `/telegram-webhook/${config.webhookSecret}`;
+      
+      app.post(webhookPath, (req, res) => {
+        console.log('📩 Received webhook request:', JSON.stringify(req.body, null, 2));
+        bot.handleUpdate(req.body);
+        res.status(200).json({ success: true });
+      });
+      
+      // Set webhook
+      const webhookUrl = `${config.webhookUrl}${webhookPath}`;
+      console.log(`🔗 Setting webhook URL to: ${webhookUrl}`);
+      
+      try {
+        await bot.telegram.setWebhook(webhookUrl);
+        console.log('✅ Webhook set successfully');
+        
+        // Verify the webhook is set correctly
+        const info = await bot.telegram.getWebhookInfo();
+        console.log('ℹ️ Webhook info:', info);
+      } catch (error) {
+        console.error('❌ Failed to set webhook:', error);
+        throw new Error('Failed to set webhook');
+      }
+    } else {
+      // Polling mode (development)
+      console.log('🔄 Starting bot in polling mode...');
+      
+      try {
+        // Make sure we're not using webhooks
+        await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+        console.log('✅ Webhook deleted successfully');
+        
+        // Launch the bot in polling mode
+        await bot.launch();
+        console.log('✅ Bot is running successfully in polling mode');
+      } catch (error) {
+        console.error('❌ Failed to start bot in polling mode:', error);
+        throw new Error('Failed to start bot in polling mode');
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Bot startup failed:', error);
+    return false;
+  }
+};
+
+// Start the server first, then the bot
+const server = startServer();
+if (server) {
+  startBot()
+    .then((success) => {
+      if (success) {
+        console.log('🎉 Server and bot started successfully!');
+      } else {
+        console.error('❌ Bot failed to start, but server is running.');
+      }
+    })
+    .catch((error) => {
+      console.error('❌ Error during bot startup:', error);
+    });
+}
 
 // Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+process.once('SIGINT', () => {
+  console.log('SIGINT received. Shutting down gracefully...');
+  bot.stop('SIGINT');
+  server?.close();
+});
+process.once('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  bot.stop('SIGTERM');
+  server?.close();
+});
 
 export { bot, app, startBot };
