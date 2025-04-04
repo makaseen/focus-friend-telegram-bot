@@ -1,7 +1,7 @@
 
 import { CalendarEvent, CalendarEventListParams } from '../types';
 
-export {
+export type {
   CalendarEvent,
   CalendarEventListParams
 };
