@@ -317,7 +317,7 @@ const startServer = () => {
   }
 };
 
-// Modified startBot function for better error handling
+// Modified startBot function for better error handling - removing duplicate definition
 const startBot = async () => {
   console.log('🤖 Starting Telegram bot...');
   
@@ -374,6 +374,8 @@ const startBot = async () => {
 
 // Start the server first, then the bot
 const server = startServer();
+
+// Fix: Check if server is properly initialized before proceeding with bot startup
 if (server) {
   startBot()
     .then((success) => {
@@ -392,12 +394,13 @@ if (server) {
 process.once('SIGINT', () => {
   console.log('SIGINT received. Shutting down gracefully...');
   bot.stop('SIGINT');
-  server?.close();
+  if (server) server.close();
 });
+
 process.once('SIGTERM', () => {
   console.log('SIGTERM received. Shutting down gracefully...');
   bot.stop('SIGTERM');
-  server?.close();
+  if (server) server.close();
 });
 
 export { bot, app, startBot };

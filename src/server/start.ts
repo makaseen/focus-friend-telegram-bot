@@ -15,7 +15,7 @@ console.log('---------------------------------------');
 const isMainModule = require.main === module;
 
 if (isMainModule) {
-  // The actual bot starting logic is now handled in telegramBot.ts
+  // The server startup is now handled in telegramBot.ts
   console.log('✅ start.ts is the main module - server startup is handled in telegramBot.ts');
   console.log('---------------------------------------');
 }
